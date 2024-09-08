@@ -26,7 +26,7 @@ class User(Base):
         unique=True,
     )
     password: Mapped[str] = mapped_column(
-        String(USER_RULES.MAX_PASSWORD_SIZE),
+        String(256),  # different of the configured value in rules cause stores the hash
         nullable=False,
     )
     first_name: Mapped[str] = mapped_column(

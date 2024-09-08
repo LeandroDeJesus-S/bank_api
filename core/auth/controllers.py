@@ -3,11 +3,13 @@ from http import HTTPStatus
 from typing import Any
 
 import jwt
+from passlib.hash import pbkdf2_sha256
 
 from core.exceptions import JWTException
 
 
 class JWTController:
+    """Controller class to manage JWT token functionalities"""
     def __init__(
         self, secret_key: str, algorithm: str, expiration_minutes: int = 5
     ) -> None:
@@ -91,3 +93,40 @@ class JWTController:
             raise JWTException(
                 f"Cannot decode the token: {str(exc)}", code=HTTPStatus.UNAUTHORIZED
             ) from exc
+
+
+class PasswordController:
+    """Controller class that manage password functionalities"""
+    def __init__(self, hasher: Any = pbkdf2_sha256) -> None:
+        """
+        Args:
+            hasher (Any): a hasher class that supports .hash(password) and
+            .verify(raw_pw, hash_pw) operation methods
+        """
+        self._hasher = hasher
+        self._hash_prefix = 'hash::'
+    
+    def hash_password(self, password: str) -> str:
+        """hash the given password
+
+        Args:
+            password (str): the password to hash
+
+        Returns:
+            str: the password hash result
+        """
+        hashed = self._hasher.hash(password)
+        return self._hash_prefix + hashed
+    
+    def check_password(self, password_raw: str, password_hash: str) -> bool:
+        """validates if password matches with the hashed password.
+
+        Args:
+            password_raw (str): user input password
+            password_hash (str): hashed password
+
+        Returns:
+            bool: True if password matches
+        """
+        pw_hash = password_hash.removeprefix(self._hash_prefix)
+        return self._hasher.verify(password_raw, pw_hash)
