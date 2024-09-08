@@ -129,10 +129,10 @@ def strong_password_validator(password: str) -> bool:
     Returns:
         bool: True if the is strong.
     """
-    up = regex_validator("[A-Z]", password)
-    low = regex_validator("[a-z]", password)
-    num = regex_validator("\d", password)
-    sym = regex_validator("[@#$&*!]", password)
+    up = regex_validator(r"[A-Z]", password)
+    low = regex_validator(r"[a-z]", password)
+    num = regex_validator(r"\d", password)
+    sym = regex_validator(r"[@#$&*!]", password)
     length = min_max_validator(
         domain_rules.user_rules.MIN_PASSWORD_SIZE,
         domain_rules.user_rules.MAX_PASSWORD_SIZE,

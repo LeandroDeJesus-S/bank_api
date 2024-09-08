@@ -10,4 +10,4 @@ class Settings(BaseSettings):
     ENVIRONMENT: str
 
 
-settings = Settings()
+settings = Settings()  # pyright: ignore

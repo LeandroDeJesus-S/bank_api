@@ -1,7 +1,8 @@
+from typing import List
 from datetime import date, datetime, timezone
 
 from sqlalchemy import Date, String
-from sqlalchemy.orm import Mapped, mapped_column, validates
+from sqlalchemy.orm import Mapped, mapped_column, validates, relationship
 
 from core import exceptions
 from core.database import Base
@@ -46,6 +47,8 @@ class User(Base):
         nullable=False,
     )
 
+    accounts: Mapped[List['Account']] = relationship(back_populates='user')  # noqa: F821 # pyright: ignore
+
     @validates("username")
     def validate_username(self, _, username):
         """validates if the username contains alphanumeric cases, spaces and
@@ -55,7 +58,7 @@ class User(Base):
             username,
         )
         if not matches:
-            raise exceptions.UserInvalidUsernameException(
+            raise exceptions.UserInvalidNameException(
                 detail="O nome de usuário é inválido."
             )
         return username
@@ -68,7 +71,7 @@ class User(Base):
             USER_RULES.FIRSTNAME_REGEX_PATTERN, first_name
         )
         if not valid:
-            raise exceptions.InvalidUserName(
+            raise exceptions.UserInvalidNameException(
                 detail='Primeiro nome inválido.'
             )
         return first_name
@@ -81,7 +84,7 @@ class User(Base):
             USER_RULES.LASTNAME_REGEX_PATTERN, last_name
         )
         if not valid:
-            raise exceptions.InvalidUserName(
+            raise exceptions.UserInvalidNameException(
                 detail='Sobrenome inválido.'
             )
         return last_name
@@ -91,7 +94,7 @@ class User(Base):
         """validates if the user's cpf is valid and return the cpf without punctuations"""
         validator = validators.CpfValidator(cpf)
         if not validator.is_valid():
-            raise exceptions.InvalidCPFError("O CPF é inválido")
+            raise exceptions.UserInvalidCPFException("O CPF é inválido")
 
         return validator.cpf
 
@@ -101,8 +104,8 @@ class User(Base):
         now = datetime.now(timezone.utc)
 
         user_age = now.year - birthdate.year
-        min_age = domain_rules.MIN_USER_AGE
-        max_age = domain_rules.MAX_USER_AGE
+        min_age = domain_rules.user_rules.MIN_USER_AGE
+        max_age = domain_rules.user_rules.MAX_USER_AGE
         is_valid = validators.min_max_validator(min_age, max_age, user_age)
 
         if not is_valid:

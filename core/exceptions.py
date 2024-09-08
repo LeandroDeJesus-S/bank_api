@@ -22,3 +22,23 @@ class UserInvalidUsernameException(ValidationException):
 
 class UserInvalidNameException(ValidationException):
     """the name of the user is invalid"""
+
+
+class AccountTypeInvalidException(ValidationException):
+    """raise when the account type is invalid"""
+
+
+class AccountInvalidNumberException(ValidationException):
+    """raises when the account number is invalid"""
+
+
+class AccountInvalidAmountException(ValidationException):
+    """raises when the amount value of the account is invalid"""
+
+
+class TransactionException(ValidationException):
+    """raises when something is wrong in the transaction"""
+
+
+class JWTException(ValidationException):
+    """raises when something is wrong with the token"""
