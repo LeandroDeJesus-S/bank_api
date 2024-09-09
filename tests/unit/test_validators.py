@@ -58,6 +58,13 @@ def test_regex_validator_with_invalid_string():
     assert not result
 
 
+@pytest.mark.parametrize('string,expected', [('some_string', True), ('some_string_', False)])
+def test_regex_validator_strict(string, expected):
+    """test if the regex validator works as expected with the strict arg"""
+    result = validators.regex_validator(r'^[a-z]{4}_[a-z]{6}$', string, strict=True)
+    assert result == expected
+
+
 strong_passwords = [
     'StrongPassword@123',
     '2C270a3@05c11E49',

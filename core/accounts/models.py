@@ -53,22 +53,26 @@ class Account(Base):
         nullable=False,
         default=Decimal("0"),
     )
-    user_id: Mapped[int] = mapped_column(ForeignKey("account.id"))
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
     account_type_id: Mapped[int] = mapped_column(ForeignKey("account_type.id"))
 
     user: Mapped['User'] = relationship(back_populates='accounts')  # noqa: F821 # pyright: ignore
-    account_type: Mapped['AccountType'] = relationship(back_populates='accounts')
+    account_type: Mapped['AccountType'] = relationship(back_populates='account')
 
-    @validates("number")
-    def validate_number(self, _, number):
+    def validate(self):
+        """method that call the validation field methods"""
+        self.validate_number()
+        self.validate_amount()
+
+    def validate_number(self):
         """validates if the number field matches with the regex pattern and
         the size configured in the domain rules config
         """
         valid_pattern = validators.regex_validator(
-            ACC_RULES.NUMBER_REGEX_PATTERN, number
+            ACC_RULES.NUMBER_REGEX_PATTERN, self.number
         )
         valid_length = validators.min_max_validator(
-            ACC_RULES.NUMBER_SIZE, ACC_RULES.NUMBER_SIZE, len(number)
+            ACC_RULES.NUMBER_SIZE, ACC_RULES.NUMBER_SIZE, len(self.number)
         )
         if not valid_pattern:
             raise exceptions.AccountInvalidNumberException(
@@ -80,14 +84,9 @@ class Account(Base):
                 f"O número da conta deve conter {ACC_RULES.NUMBER_SIZE} números."
             )
 
-        return number
-
-    @validates("amount")
-    def validate_amount(self, _, amount):
+    def validate_amount(self):
         """validates if the amount is not negative"""
-        if amount < Decimal("0"):
+        if self.amount < Decimal("0"):
             raise exceptions.AccountInvalidAmountException(
                 "O valor não pode ser menor que 0."
             )
-
-        return amount

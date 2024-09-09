@@ -2,3 +2,6 @@
 *__pyc*
 .env
 *.mwb*
+.coverage
+*.db
+htmlcov/

@@ -103,7 +103,7 @@ def min_max_validator(min_, max_, value) -> bool:
     return min_ <= value <= max_
 
 
-def regex_validator(pattern: str, string: str, flags=0) -> bool:
+def regex_validator(pattern: str, string: str, flags=0, strict=False) -> bool:
     """validates the given string applying the given pattern
 
     Args:
@@ -115,8 +115,9 @@ def regex_validator(pattern: str, string: str, flags=0) -> bool:
         bool: True if the pattern matches
     """
     regex = re.compile(pattern, flags)
-    match = re.search(regex, string)
-    return match is not None
+    if strict:
+        return re.match(pattern, string, flags) is not None
+    return re.search(regex, string) is not None
 
 
 def strong_password_validator(password: str) -> bool:
@@ -132,7 +133,7 @@ def strong_password_validator(password: str) -> bool:
     up = regex_validator(r"[A-Z]", password)
     low = regex_validator(r"[a-z]", password)
     num = regex_validator(r"\d", password)
-    sym = regex_validator(r"[@#$&*!]", password)
+    sym = regex_validator(r"[\!@#\$%\^&\*\(\)_\+]", password)
     length = min_max_validator(
         domain_rules.user_rules.MIN_PASSWORD_SIZE,
         domain_rules.user_rules.MAX_PASSWORD_SIZE,
