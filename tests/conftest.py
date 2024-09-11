@@ -1,6 +1,5 @@
 from datetime import date
 
-from faker import Faker
 from httpx import AsyncClient, ASGITransport
 import pytest_asyncio as pyt
 
@@ -8,6 +7,7 @@ from core.domain_rules import domain_rules
 from core.settings import settings
 
 settings.DATABASE_URI = 'sqlite:///test.db'
+
 
 # general fixtures
 @pyt.fixture(scope='session', autouse=True)
@@ -93,9 +93,8 @@ def ini_user():
 
 
 @pyt.fixture
-async def five_dumb_users(user_ctrl):
+async def five_dumb_users(user_ctrl, faker):
     """create five random users in database"""    
-    f = Faker()
     cpfs = [
         "422.961.160-94",
         "660.135.320-52",
@@ -106,12 +105,12 @@ async def five_dumb_users(user_ctrl):
     for i in range(5):
         await user_ctrl.create(
             id=i + 1,
-            username=f.user_name(),
-            password=f.password(),
-            first_name=f.first_name(),
-            last_name=f.last_name(),
+            username=faker.user_name()[:domain_rules.user_rules.MAX_USERNAME_SIZE],
+            password=faker.password(),
+            first_name=faker.first_name(),
+            last_name=faker.last_name(),
             cpf=cpfs[i],
-            birthdate=f.date_of_birth(
+            birthdate=faker.date_of_birth(
                 maximum_age=domain_rules.user_rules.MAX_USER_AGE - 1,
                 minimum_age=domain_rules.user_rules.MIN_USER_AGE,
             ),
