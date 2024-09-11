@@ -10,6 +10,7 @@ from core.exceptions import UserDatabaseException
 
 async def test_get_user_success(user_ctrl, dumb_user):
     """test if get_user returns the correct user"""
+
     where_field = "id"
     equals_to = 1
 

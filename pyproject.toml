@@ -37,6 +37,11 @@ addopts = "-ra -x -vvv --cov=core --cov-report html"
 testpaths = [
     "tests",
 ]
+
+log_file = "logs/pytest-logs.log"
+log_file_level = "DEBUG"
+log_cli = false
+
 asyncio_mode = 'auto'
 asyncio_default_fixture_loop_scope = "session"
 

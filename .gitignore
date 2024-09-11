@@ -5,3 +5,6 @@
 .coverage
 *.db
 htmlcov/
+logs/
+.mypy_cache
+.ruff_cache
