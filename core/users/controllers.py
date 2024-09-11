@@ -1,8 +1,8 @@
 from http import HTTPStatus
-from typing import List, Any, Mapping
-
+from typing import List, Any, Mapping, Sequence
 from databases.interfaces import Record
-from sqlalchemy import select, insert, update
+from sqlalchemy import select, insert, update, delete
+from sqlalchemy.exc import SQLAlchemyError
 
 from core.database import DB
 from core.exceptions import UserDatabaseException
@@ -35,14 +35,13 @@ class UserController:
             user = await self._db.fetch_one(stmt)
             return user
 
-        except (AttributeError, TypeError):
+        except (AttributeError, TypeError) as exc:
             raise UserDatabaseException(
                 "Invalid where_field name or type",
-            )
-        except Exception as exc:
-            raise UserDatabaseException(
-                f"Unexpected fail: {str(exc)}", code=HTTPStatus.INTERNAL_SERVER_ERROR
-            )
+            ) from exc
+
+        except SQLAlchemyError as exc:
+            raise UserDatabaseException("Unexpected fail on fetching user") from exc
 
     async def all(
         self, limit: int = DEFAULT_LIMIT, offset: int = DEFAULT_OFFSET
@@ -65,10 +64,10 @@ class UserController:
             stmt = select(self._model).offset(offset).limit(limit)
             users = await self._db.fetch_all(stmt)
             return users
-        except Exception as exc:
+        except SQLAlchemyError as exc:
             raise UserDatabaseException(
-                f"Error fetching users: {str(exc)}",
-            )
+                "Error fetching users.",
+            ) from exc
 
     async def create(self, **user_mapping: Mapping) -> int | None:
         """creates a new user in database
@@ -76,14 +75,16 @@ class UserController:
         Returns:
             bool: 1 if created with success
         """
+        self.__check_fields(list(user_mapping.keys()))
+
         try:
             self._model(**user_mapping).validate()
 
             stmt = insert(self._model)
             return await self._db.execute(stmt, values=user_mapping)
 
-        except Exception as exc:
-            raise UserDatabaseException(f"User creation fail: {str(exc)}") from exc
+        except SQLAlchemyError as exc:
+            raise UserDatabaseException("User creation fail.") from exc
 
     async def update_user(self, user_id: int, **mapping: Mapping) -> bool:
         """updates an user from database
@@ -95,5 +96,44 @@ class UserController:
         if not isinstance(user_id, int):
             return False
         
-        stmt = update(self._model).where(self._model.id == user_id).values(**mapping)
-        return await self._db.execute(stmt)
+        self.__check_fields(list(mapping.keys()))
+
+        try:
+            stmt = (
+                update(self._model).where(self._model.id == user_id).values(**mapping)
+            )
+            return await self._db.execute(stmt)
+
+        except SQLAlchemyError as e:  # TODO: testar
+            raise UserDatabaseException("User update fail.") from e
+
+    async def query(self, q, **values):
+        """executes the given query"""
+        if q._is_select_statement:
+            return await self._db.fetch_all(q, values=values)
+        return await self._db.execute(q, values=values)
+
+    async def delete_user(self, id: int):
+        """deletes a user from database
+
+        Args:
+            id (int): the user id to delete
+
+        Raises:
+            UserDatabaseException: if some exception related to the sqlalchemy occur
+        """
+        try:
+            stmt = delete(self._model).where(self._model.id == id)
+            await self._db.execute(stmt)
+        except SQLAlchemyError:
+            raise UserDatabaseException(
+                'Não foi possivel concluir a operação.'
+            )
+
+    def __check_fields(self, fields: Sequence[str]):
+        """raises UserDatabaseException if any of the given fields dos not exists."""
+        for field in fields:
+            if not hasattr(self._model, field):
+                raise UserDatabaseException(
+                    f"{field} does not exists.", code=HTTPStatus.UNPROCESSABLE_ENTITY
+                )

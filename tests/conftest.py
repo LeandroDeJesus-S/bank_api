@@ -1,6 +1,7 @@
 from datetime import date
 
 from faker import Faker
+from httpx import AsyncClient, ASGITransport
 import pytest_asyncio as pyt
 
 from core.database import DB, Base, engine
@@ -8,6 +9,7 @@ from core.auth.controllers import JWTController, PasswordController
 from core.users.controllers import UserController
 from core.domain_rules import domain_rules
 from core.users.models import User
+from core.settings import settings
 
 
 @pyt.fixture
@@ -38,6 +40,7 @@ async def db_create():
     from core.users import models
     from core.accounts import models
 
+    settings.DATABASE_URI = 'sqlite:///:memory:'
     Base.metadata.create_all(engine)
     await DB.connect()
     yield
@@ -103,3 +106,16 @@ def ini_user():
         birthdate=date(2005, 3, 11),
     )
     return usr
+
+
+@pyt.fixture
+async def client():
+    from main import api
+
+    transport = ASGITransport(api)
+    headers = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+    }
+    async with AsyncClient(base_url='http://test', transport=transport, headers=headers) as c:
+        yield c

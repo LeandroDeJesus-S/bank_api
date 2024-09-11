@@ -2,6 +2,8 @@ from http import HTTPStatus
 from datetime import date
 
 import pytest
+from sqlalchemy import select, insert, update, delete
+from sqlalchemy.exc import SQLAlchemyError
 
 from core.exceptions import UserDatabaseException
 
@@ -38,7 +40,7 @@ async def test_get_user_return_none_if_not_found(user_ctrl, dumb_user):
     assert result is None
 
 
-async def test_get_user_raises_user_database_exception_with_when_field_invalid_field_type(
+async def test_get_user_raises_user_database_exception_with_invalid_field_type(
     user_ctrl, dumb_user
 ):
     """test if get_user raises UserDatabaseException with an invalid type to where_field"""
@@ -52,12 +54,12 @@ async def test_get_user_raises_user_database_exception_with_when_field_invalid_f
     assert exc.value.code == HTTPStatus.INTERNAL_SERVER_ERROR
 
 
-async def test_get_user_raises_user_database_exception_when_unexpected_fail_occur(
+async def test_get_user_raises_user_database_exception_when_database_fail_occur(
     user_ctrl, dumb_user, mocker
 ):
-    """test if get_user raises UserDatabaseException when unexpected exception
+    """test if get_user raises UserDatabaseException when database exception
     occur"""
-    mocker.patch("core.users.controllers.select", side_effect=Exception)
+    mocker.patch("core.users.controllers.select", side_effect=SQLAlchemyError)
 
     where_field = "id"  # noqa
     equals_to = 1
@@ -99,16 +101,16 @@ async def test_all_return_all_users_with_correct_limit_and_offset(
     assert [3] == [r.id for r in result]
 
 
-async def test_all_raises_user_database_exception_some_exception_occur(
+async def test_all_raises_user_database_exception_database_exception_occur(
     five_dumb_users, user_ctrl, mocker
 ):
-    """test if .all raises UserDatabaseException if some exception occur"""
-    mocker.patch("core.users.controllers.select", side_effect=Exception)
+    """test if .all raises UserDatabaseException if database exception occur"""
+    mocker.patch("core.users.controllers.select", side_effect=SQLAlchemyError)
 
     with pytest.raises(UserDatabaseException) as exc:
         await user_ctrl.all(offset=2, limit=1)
 
-    assert exc.match("Error fetching users: ")
+    assert exc.match("Error fetching users.")
     assert exc.value.code == HTTPStatus.INTERNAL_SERVER_ERROR
 
 
@@ -147,11 +149,27 @@ async def test_create_success(user_ctrl):
     assert user.cpf == "422.961.160-94"
 
 
+async def test_create_raises_user_database_exception_when_field_does_not_exists(user_ctrl):
+    with pytest.raises(UserDatabaseException) as e:
+        await user_ctrl.create(
+            id=1,
+            user_name="test",
+            password="Test@123",
+            first_name="test",
+            last_name="test",
+            cpf="422.961.160-94",
+            birthdate=date(2005, 3, 11),
+        )
+    
+    assert e.value.detail == 'user_name does not exists.'
+    assert e.value.code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+
 async def test_create_raises_user_database_exception_if_an_exception_occur(
     user_ctrl, mocker
 ):
-    """test if raises UserDatabaseException when any exception raises"""
-    mocker.patch("core.users.controllers.insert", side_effect=Exception)
+    """test if raises UserDatabaseException when database exception raises"""
+    mocker.patch("core.users.controllers.insert", side_effect=SQLAlchemyError)
 
     with pytest.raises(UserDatabaseException) as exc:
         await user_ctrl.create(
@@ -164,18 +182,24 @@ async def test_create_raises_user_database_exception_if_an_exception_occur(
             birthdate=date(2005, 3, 11),
         )
 
-    assert exc.match("User creation fail: ")
+    assert exc.match("User creation fail.")
     assert exc.value.code == HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 async def test_update_user_return_true_if_successfully_updated(user_ctrl, dumb_user):
     """test if update_user return true when the user data is updated"""
     updated_username = 'updated_username'
-    updated = await user_ctrl.update_user(user_id=dumb_user.id, username=updated_username)
+    updated_fname = 'new_fname'
+    updated = await user_ctrl.update_user(
+        user_id=dumb_user.id,
+        username=updated_username,
+        first_name=updated_fname,
+    )
     updated_user = await user_ctrl.get('id', dumb_user.id)
 
     assert updated
     assert updated_user.username == updated_username
+    assert updated_user.first_name == updated_fname
 
 
 async def test_update_user_return_false_with_invalid_id(user_ctrl, dumb_user):
@@ -192,3 +216,78 @@ async def test_update_user_return_false_with_invalid_id_type(user_ctrl, dumb_use
     updated = await user_ctrl.update_user(user_id='1', username=updated_username)
 
     assert not updated
+
+
+async def test_update_user_raises_user_database_exception_when_field_does_not_exists(user_ctrl, dumb_user):
+    with pytest.raises(UserDatabaseException) as e:
+        await user_ctrl.update_user(1, no_exists='x')
+
+    assert e.value.code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert e.value.detail == 'no_exists does not exists.'
+
+
+async def test_update_user_raises_user_database_exception_when_sqlalchemy_error_occur(user_ctrl, dumb_user, mocker):
+    mocker.patch('core.users.controllers.DB.execute', side_effect=SQLAlchemyError)
+
+    with pytest.raises(UserDatabaseException) as e:
+        await user_ctrl.update_user(1, username='anything')
+    
+    assert e.value.detail == 'User update fail.'
+    assert e.value.code == HTTPStatus.INTERNAL_SERVER_ERROR
+
+
+async def test_query_select(user_ctrl, five_dumb_users):
+    query = select(user_ctrl._model).where(user_ctrl._model.id == 3)
+    result = await user_ctrl.query(query)
+    expected = await user_ctrl.get('id', 3)
+    assert dict(result[0]) == dict(expected)  # type: ignore
+
+
+async def test_query_insert(user_ctrl, ini_user):
+    data = ini_user.__dict__.copy()
+    data.pop('_sa_instance_state')
+
+    query = insert(user_ctrl._model).values(**data)
+    result = await user_ctrl.query(query)
+    ins_usr = await user_ctrl.get('id', ini_user.id)
+    
+    assert result
+    assert dict(ins_usr) == data
+
+
+async def test_query_update(user_ctrl, dumb_user):
+    data = {'username': 'updated'}
+    query = update(user_ctrl._model).values(**data)
+    result = await user_ctrl.query(query)
+    up_usr = await user_ctrl.get('id', dumb_user.id)
+    
+    assert result
+    assert up_usr.username == data["username"]
+
+
+async def test_query_delete(user_ctrl, dumb_user):
+    query = delete(user_ctrl._model).where(user_ctrl._model.id == dumb_user.id)
+    result = await user_ctrl.query(query)
+    up_usr = await user_ctrl.get('id', dumb_user.id)
+    
+    assert result
+    assert up_usr is None
+
+
+async def test_delete_user(user_ctrl, dumb_user):
+    user_id = dumb_user.id
+    await user_ctrl.delete_user(user_id)
+    user = await user_ctrl.get('id', user_id)
+
+    assert user is None
+
+
+async def test_delete_user_when_sqlalchemy_error_raises(user_ctrl, dumb_user, mocker):
+    mocker.patch('core.users.controllers.DB.execute', side_effect=SQLAlchemyError)
+    user_id = dumb_user.id
+
+    with pytest.raises(UserDatabaseException) as e:
+        await user_ctrl.delete_user(user_id)
+
+    assert e.value.detail == 'Não foi possivel concluir a operação.'
+    assert e.value.code == HTTPStatus.INTERNAL_SERVER_ERROR

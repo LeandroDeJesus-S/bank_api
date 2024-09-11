@@ -22,7 +22,8 @@ class UserRules(BaseModel):
     MIN_LASTNAME_SIZE: int = 2
     MAX_LASTNAME_SIZE: int = 100
 
-    MAX_CPF_SIZE: int = 11
+    MIN_CPF_SIZE: int = 11
+    MAX_CPF_SIZE: int = 14
 
     USERNAME_REGEX_PATTERN: str = (
         r"^([\w ]{2,20})$"  # alphanumeric and spaces, min 2 max 30 chars
