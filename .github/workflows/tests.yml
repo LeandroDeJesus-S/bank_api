@@ -20,7 +20,7 @@ jobs:
               run: poetry install
          
             - name: running mypy
-              run: poetry run mypy --ignore-missing-imports
+              run: poetry run mypy core/ --ignore-missing-imports
 
             - name: running pytest
               run: poetry run pytest
