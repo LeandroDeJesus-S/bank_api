@@ -32,5 +32,4 @@ class UserUpSchema(BaseModel):
 class UserOutSchema(UserInSchema):
     id: int
     password: str = Field(exclude=True)
-    password: str = Field(exclude=True)
     cpf: str = Field(exclude=True)

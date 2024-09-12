@@ -1,0 +1,26 @@
+name: Run tests
+on: [push, pull_request]
+jobs:
+    test:
+        runs-on: ubuntu-latest
+        steps:
+            - name: load repo
+              uses: actions/checkout@v4
+            
+            - name: install python
+              uses: actions/setup-python@v5
+              with:
+                python-version: '3.12'
+                cache: 'poetry'
+            
+            - name: install poetry
+              run: pip install poetry
+            
+            - name: install dependencies
+              run: poetry install
+                          
+            - name: running mypy
+              run: poetry run mypy --ignore-missing-imports
+
+            - name: running pytest
+              run: poetry run pytest
