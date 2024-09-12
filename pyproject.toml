@@ -6,7 +6,7 @@ authors = ["LeandroDeJesus-S <jstleandro@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = "^3.12.4"
 fastapi = "^0.114.0"
 uvicorn = "^0.30.6"
 databases = {extras = ["aiosqlite"], version = "^0.9.0"}

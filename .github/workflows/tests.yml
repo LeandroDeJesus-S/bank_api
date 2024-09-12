@@ -6,19 +6,19 @@ jobs:
         steps:
             - name: load repo
               uses: actions/checkout@v4
-            
+
+            - name: install poetry
+              run: curl -sSL https://install.python-poetry.org | python3 -
+
             - name: install python
               uses: actions/setup-python@v5
               with:
-                python-version: '3.12'
+                python-version: '3.12.4'
                 cache: 'poetry'
-            
-            - name: install poetry
-              run: pip install poetry
-            
+
             - name: install dependencies
               run: poetry install
-                          
+         
             - name: running mypy
               run: poetry run mypy --ignore-missing-imports
 
