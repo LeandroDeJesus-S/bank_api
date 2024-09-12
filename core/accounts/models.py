@@ -56,7 +56,7 @@ class Account(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
     account_type_id: Mapped[int] = mapped_column(ForeignKey("account_type.id"))
 
-    user: Mapped['User'] = relationship(back_populates='accounts')  # noqa: F821 # pyright: ignore
+    user: Mapped['User'] = relationship(back_populates='accounts')  # type: ignore # noqa: F821
     account_type: Mapped['AccountType'] = relationship(back_populates='account')
 
     def validate(self):

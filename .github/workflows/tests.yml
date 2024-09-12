@@ -18,6 +18,9 @@ jobs:
 
             - name: install dependencies
               run: poetry install
+            
+            - name: create .env
+              run: cp .env-example .env
          
             - name: running mypy
               run: poetry run mypy core/ --ignore-missing-imports

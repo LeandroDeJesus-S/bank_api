@@ -36,8 +36,8 @@ class Transaction(Base):
     )
     type: Mapped[enum.Enum] = mapped_column(Enum(TransactionType), nullable=False)
 
-    from_account: Mapped["Account"] = relationship()  # noqa: F821 #pyright: ignore
-    to_account: Mapped["Account"] = relationship()  # noqa: F821  #pyright: ignore
+    from_account: Mapped["Account"] = relationship()  # type: ignore # noqa: F821
+    to_account: Mapped["Account"] = relationship()  # type: ignore # noqa: F821  
 
     @validates("to_id")
     def validate_self_transference(self, _, receiver_id):

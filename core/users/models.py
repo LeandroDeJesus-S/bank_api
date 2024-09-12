@@ -47,7 +47,7 @@ class User(Base):
         nullable=False,
     )
 
-    accounts: Mapped[List['Account']] = relationship(back_populates='user')  # noqa: F821 # pyright: ignore
+    accounts: Mapped[List['Account']] = relationship(back_populates='user')  # type: ignore # noqa: F821
 
     def validate(self):
         """call all functions that validates the fields"""
