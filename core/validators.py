@@ -110,6 +110,7 @@ def regex_validator(pattern: str, string: str, flags=0, strict=False) -> bool:
         pattern (str): regular expression
         string (_type_): the value to apply the regex
         flags (int, optional): regex flags. Defaults to 0.
+        strict (bool): if True uses re.match instead re.search
 
     Returns:
         bool: True if the pattern matches

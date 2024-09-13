@@ -49,14 +49,15 @@ class AccountRules(BaseModel):
     """stores all the business rules related to the accounts part"""
 
     NUMBER_SIZE: int = 10
-    NUMBER_REGEX_PATTERN: str = r"\d+"
+    NUMBER_REGEX_PATTERN: str = r"^\d+$"
 
 
 class AccountTypeRules(BaseModel):
     """stores all the business rules related to the accounts type"""
 
+    MIN_TYPE_NAME_SIZE: int = 2
     MAX_TYPE_NAME_SIZE: int = 25
-    TYPE_REGEX_PATTERN: str = r"^[A-Za-z]+$"
+    TYPE_REGEX_PATTERN: str = r"^[A-Za-z]{2,25}$"
 
 
 class DomainRules(BaseSettings):

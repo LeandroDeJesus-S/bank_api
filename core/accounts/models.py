@@ -24,17 +24,17 @@ class AccountType(Base):
 
     account: Mapped['Account'] = relationship(back_populates='account_type')
 
-    @validates("type")
-    def validate_type(self, _, type):
+    def validate(self):
+        self.validate_type()
+
+    def validate_type(self):
         valid = validators.regex_validator(
-            ACC_TYPE_RULES.TYPE_REGEX_PATTERN, type
+            ACC_TYPE_RULES.TYPE_REGEX_PATTERN, self.type, strict=True
         )
         if not valid:
             raise exceptions.AccountTypeInvalidException(
                 detail="O tipo da conta deve conter apenas letras."
             )
-
-        return type
 
 
 class Account(Base):
@@ -69,7 +69,7 @@ class Account(Base):
         the size configured in the domain rules config
         """
         valid_pattern = validators.regex_validator(
-            ACC_RULES.NUMBER_REGEX_PATTERN, self.number
+            ACC_RULES.NUMBER_REGEX_PATTERN, self.number, strict=True
         )
         valid_length = validators.min_max_validator(
             ACC_RULES.NUMBER_SIZE, ACC_RULES.NUMBER_SIZE, len(self.number)
@@ -79,7 +79,7 @@ class Account(Base):
                 "O número da conta deve conter apenas números."
             )
 
-        elif not valid_length:
+        if not valid_length:
             raise exceptions.AccountInvalidNumberException(
                 f"O número da conta deve conter {ACC_RULES.NUMBER_SIZE} números."
             )

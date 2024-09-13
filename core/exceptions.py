@@ -47,6 +47,12 @@ class AccountInvalidNumberException(ValidationException):
 class AccountInvalidAmountException(ValidationException):
     """raises when the amount value of the account is invalid"""
 
+    
+class AccountDatabaseException(ValidationException):
+    """raises when something is wrong manipulating the accounts related data"""
+    def __init__(self, detail: str, *, code=HTTPStatus.INTERNAL_SERVER_ERROR) -> None:
+        super().__init__(detail, code=code)
+
 
 # Transaction exceptions
 

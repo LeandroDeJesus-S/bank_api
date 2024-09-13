@@ -1,4 +1,5 @@
 from datetime import date
+from decimal import Decimal
 
 from httpx import AsyncClient, ASGITransport
 import pytest_asyncio as pyt
@@ -8,16 +9,16 @@ from core.settings import settings
 
 settings.DATABASE_URI = 'sqlite:///test.db'
 
+from core.database import DB, Base, engine  # noqa: F401 , E402
+from core.users.models import User  # noqa: F401 , E402
+from core.accounts.models import AccountType, Account  # noqa: F401 , E402
+
 
 # general fixtures
 @pyt.fixture(scope='session', autouse=True)
 async def db_create():
     """create all tables, pass the time to tests execution and drop
     all tables when they finalize"""
-    from core.database import DB, Base, engine
-    from core.users.models import User  # noqa: F401
-    from core.accounts.models import AccountType, Account  # noqa: F401
-
     Base.metadata.create_all(engine)
     await DB.connect()
     yield
@@ -27,9 +28,7 @@ async def db_create():
 
 @pyt.fixture(autouse=True)
 async def db_clean(db_create):
-    """clean all tables data after each test function execution"""
-    from core.database import DB, Base
-
+    """clean all tables data after each test function execution""" 
     for table in Base.metadata.sorted_tables:
         try:
             await DB.execute(f"DELETE FROM {table.name};")
@@ -77,9 +76,7 @@ async def dumb_user(user_ctrl):
 
 @pyt.fixture
 def ini_user():
-    """returns a initialized user model instance"""
-    from core.users.models import User
-
+    """returns a initialized user model instance with valid data"""
     usr = User(
         id=1,
         username="dumb_username",
@@ -132,3 +129,60 @@ def password_controller():
     from core.auth.controllers import PasswordController
     ctrl = PasswordController()
     return ctrl
+
+
+# accounts fixtures
+@pyt.fixture
+def accounts_ctrl():
+    """return the instance of the accounts controller"""
+    from core.accounts.controllers import AccountsController
+
+    ctrl = AccountsController()
+    return ctrl
+
+
+@pyt.fixture
+async def dumb_account_type(accounts_ctrl):
+    await accounts_ctrl.create_account_type(
+        id=1,
+        type='corrente',
+    )
+    acc_typ = await accounts_ctrl.get_account_type(id=1)
+    return acc_typ
+
+
+@pyt.fixture
+async def dumb_account(dumb_user, dumb_account_type, accounts_ctrl):
+    """create and return an account"""
+    await accounts_ctrl.create_account(
+        id=1,
+        number='0123456789',
+        amount=Decimal('0'),
+        user_id=dumb_user.id,
+        account_type_id=dumb_account_type.id
+    )
+    acc = await accounts_ctrl.get_account('id', 1)
+    return acc
+
+
+@pyt.fixture
+def ini_account(dumb_account_type, dumb_user):
+    """returns a initialized user model instance with valid data"""
+    usr = Account(
+        id=1,
+        number='0123456789',
+        amount=Decimal('0'),
+        user_id=dumb_user.id,
+        account_type_id=dumb_account_type.id
+    )
+    return usr
+
+
+@pyt.fixture
+def ini_account_type():
+    """returns a initialized user model instance with valid data"""
+    usr = AccountType(
+        id=1,
+        type='corrente'
+    )
+    return usr
