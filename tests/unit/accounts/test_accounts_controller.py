@@ -11,7 +11,7 @@ async def test_create_account_type(accounts_ctrl):
     """test the creation of the account type with valid data"""
     acc_type = 'corrente'
     created = await accounts_ctrl.create_account_type(id=1, type=acc_type)
-    acc_type_db = await accounts_ctrl.get_account_type(id=1)
+    acc_type_db = await accounts_ctrl.get_account_type(by='id', value=1)
     assert created
     assert acc_type_db.id == 1
     assert acc_type_db.type == acc_type
@@ -50,35 +50,44 @@ async def test_create_account_type_when_raises_sqlalchemy_error(accounts_ctrl, m
 async def test_get_account_type_success(accounts_ctrl, dumb_account_type):
     """test get_account_type with valid data"""
     id = dumb_account_type.id
-    acc_typ = await accounts_ctrl.get_account_type(id=id)
+    type = dumb_account_type.type
+
+    by_id = await accounts_ctrl.get_account_type(by='id', value=id)
+    by_type = await accounts_ctrl.get_account_type(by='type', value=type)
     
-    assert acc_typ.id == id
-    assert acc_typ.type == dumb_account_type.type
+    assert by_id.id == id and by_id.type == type
+    assert by_type.id == id and by_type.type == type
 
 
 async def test_get_account_type_with_non_existent_id(accounts_ctrl, dumb_account_type):
     """test get_account_type with an id that does not exists"""
     id = 999
-    acc_typ = await accounts_ctrl.get_account_type(id=id)
+    acc_typ = await accounts_ctrl.get_account_type(by='id', value=id)
     
     assert acc_typ is None
 
 
 async def test_get_account_type_with_invalid_id_type(accounts_ctrl, dumb_account_type):
     """test get_account_type with an id that does not exists"""
-    id = '1'
+    id = 1.5
     with pytest.raises(TypeError) as e:
-        await accounts_ctrl.get_account_type(id=id)
+        await accounts_ctrl.get_account_type(by='id', value=id)
     
-    assert e.value.args[0] == '`id` must be instance of int'
+    assert e.value.args[0] == "`value` must be instance of int or str"
 
+async def test_get_account_type_with_invalid_by_value(accounts_ctrl, dumb_account_type):
+    """test if raises attribute error when given an unavailable field to `by` arg"""
+    with pytest.raises(AttributeError) as e:
+        await accounts_ctrl.get_account_type(by='not_available', value=1)
+    
+    assert e.value.args[0] == "`by`must be `id` or `type`."
 
 async def test_get_account_type_when_sqlalchemy_error_raises(accounts_ctrl, dumb_account_type, mocker):
     """test get_account_type when a sqlalchemy error occur"""
     mocker.patch('core.accounts.controllers.DB.fetch_one', side_effect=SQLAlchemyError)
 
     with pytest.raises(AccountDatabaseException) as e:
-        await accounts_ctrl.get_account_type(id=1)
+        await accounts_ctrl.get_account_type(by='id', value=1)
     
     assert e.value.detail == 'Something went wrong getting the account type.'
     assert e.value.code == HTTPStatus.INTERNAL_SERVER_ERROR

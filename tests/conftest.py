@@ -147,7 +147,7 @@ async def dumb_account_type(accounts_ctrl):
         id=1,
         type='corrente',
     )
-    acc_typ = await accounts_ctrl.get_account_type(id=1)
+    acc_typ = await accounts_ctrl.get_account_type(by='id', value=1)
     return acc_typ
 
 
