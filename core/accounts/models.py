@@ -1,7 +1,8 @@
 from decimal import Decimal
+from typing import List
 
 from sqlalchemy import String, DECIMAL, ForeignKey, CHAR
-from sqlalchemy.orm import Mapped, mapped_column, validates, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core import exceptions
 from core.database import Base
@@ -22,7 +23,7 @@ class AccountType(Base):
         String(ACC_TYPE_RULES.MAX_TYPE_NAME_SIZE), nullable=False, unique=True
     )
 
-    account: Mapped['Account'] = relationship(back_populates='account_type')
+    account: Mapped[List["Account"]] = relationship(back_populates="account_type")
 
     def validate(self):
         self.validate_type()
@@ -33,7 +34,7 @@ class AccountType(Base):
         )
         if not valid:
             raise exceptions.AccountTypeInvalidException(
-                detail="O tipo da conta deve conter apenas letras."
+                detail="O tipo da conta deve conter apenas letras (exceto caracteres especiais)."
             )
 
 
@@ -56,8 +57,8 @@ class Account(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
     account_type_id: Mapped[int] = mapped_column(ForeignKey("account_type.id"))
 
-    user: Mapped['User'] = relationship(back_populates='accounts')  # type: ignore # noqa: F821
-    account_type: Mapped['AccountType'] = relationship(back_populates='account')
+    user: Mapped["User"] = relationship(back_populates="accounts")  # type: ignore # noqa: F821
+    account_type: Mapped["AccountType"] = relationship(back_populates="account")
 
     def validate(self):
         """method that call the validation field methods"""

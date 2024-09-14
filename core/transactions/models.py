@@ -24,10 +24,10 @@ class Transaction(Base):
     __tablename__ = "transaction"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    from_id: Mapped[int] = mapped_column(
+    from_account_id: Mapped[int] = mapped_column(
         ForeignKey("account.id", name="transaction_account_from")
     )
-    to_id: Mapped[int] = mapped_column(
+    to_account_id: Mapped[int] = mapped_column(
         ForeignKey("account.id", name="transaction_account_to")
     )
     value: Mapped[Decimal] = mapped_column(DECIMAL(10, 2), nullable=False)
@@ -36,8 +36,8 @@ class Transaction(Base):
     )
     type: Mapped[enum.Enum] = mapped_column(Enum(TransactionType), nullable=False)
 
-    from_account: Mapped["Account"] = relationship()  # type: ignore # noqa: F821
-    to_account: Mapped["Account"] = relationship()  # type: ignore # noqa: F821  
+    from_account: Mapped[List["Account"]] = relationship()  # type: ignore # noqa: F821
+    to_account: Mapped[List["Account"]] = relationship()  # type: ignore # noqa: F821  
 
     @validates("to_id")
     def validate_self_transference(self, _, receiver_id):

@@ -21,5 +21,5 @@ async def test_validate_type_fail(ini_account_type, type):
     with pytest.raises(AccountTypeInvalidException) as e:
         ini_account_type.validate_type()
 
-    assert e.value.detail == "O tipo da conta deve conter apenas letras."
+    assert e.value.detail == "O tipo da conta deve conter apenas letras (exceto caracteres especiais)."
     assert e.value.code == HTTPStatus.UNPROCESSABLE_ENTITY

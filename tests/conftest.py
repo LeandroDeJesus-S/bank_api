@@ -3,11 +3,12 @@ from decimal import Decimal
 
 from httpx import AsyncClient, ASGITransport
 import pytest_asyncio as pyt
+from sqlalchemy import insert
 
 from core.domain_rules import domain_rules
 from core.settings import settings
 
-settings.DATABASE_URI = 'sqlite:///test.db'
+settings.DATABASE_URI = 'sqlite+aiosqlite:///test.db'
 
 from core.database import DB, Base, engine  # noqa: F401 , E402
 from core.users.models import User  # noqa: F401 , E402
@@ -19,11 +20,14 @@ from core.accounts.models import AccountType, Account  # noqa: F401 , E402
 async def db_create():
     """create all tables, pass the time to tests execution and drop
     all tables when they finalize"""
-    Base.metadata.create_all(engine)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
     await DB.connect()
     yield
     await DB.disconnect()
-    Base.metadata.drop_all(engine)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
 
 
 @pyt.fixture(autouse=True)
@@ -152,6 +156,15 @@ async def dumb_account_type(accounts_ctrl):
 
 
 @pyt.fixture
+async def five_dumb_account_types(accounts_ctrl, faker):
+    """creates five dumb account types"""
+    stmt = insert(accounts_ctrl._account_type_model).values(
+        [{'type': faker.word()} for i in range(5)]
+    )
+    await accounts_ctrl.query(stmt)
+
+
+@pyt.fixture
 async def dumb_account(dumb_user, dumb_account_type, accounts_ctrl):
     """create and return an account"""
     await accounts_ctrl.create_account(
@@ -163,6 +176,19 @@ async def dumb_account(dumb_user, dumb_account_type, accounts_ctrl):
     )
     acc = await accounts_ctrl.get_account('id', 1)
     return acc
+
+
+@pyt.fixture
+async def five_dumb_accounts(five_dumb_users, dumb_account_type, accounts_ctrl, user_ctrl, faker):
+    """create five dumb accounts"""
+    all_users = await user_ctrl.all()
+    for user in all_users:
+        await accounts_ctrl.create_account(
+            number=f'{faker.random_number(10, fix_len=True)}',
+            amount=Decimal('0'),
+            user_id=user.id,
+            account_type_id=dumb_account_type.id
+        )
 
 
 @pyt.fixture

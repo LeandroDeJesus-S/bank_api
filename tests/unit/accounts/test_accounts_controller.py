@@ -3,6 +3,7 @@ from http import HTTPStatus
 
 import pytest
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy import select, update
 
 from core.exceptions import AccountDatabaseException, AccountTypeInvalidException
 
@@ -32,7 +33,7 @@ async def test_create_account_type_with_invalid_type_field_pattern(accounts_ctrl
     with pytest.raises(AccountTypeInvalidException) as e:
         await accounts_ctrl.create_account_type(type=type_)
     
-    assert e.value.detail == 'O tipo da conta deve conter apenas letras.'
+    assert e.value.detail == 'O tipo da conta deve conter apenas letras (exceto caracteres especiais).'
     assert e.value.code == HTTPStatus.UNPROCESSABLE_ENTITY
 
 
@@ -75,12 +76,14 @@ async def test_get_account_type_with_invalid_id_type(accounts_ctrl, dumb_account
     
     assert e.value.args[0] == "`value` must be instance of int or str"
 
+
 async def test_get_account_type_with_invalid_by_value(accounts_ctrl, dumb_account_type):
     """test if raises attribute error when given an unavailable field to `by` arg"""
     with pytest.raises(AttributeError) as e:
         await accounts_ctrl.get_account_type(by='not_available', value=1)
     
     assert e.value.args[0] == "`by`must be `id` or `type`."
+
 
 async def test_get_account_type_when_sqlalchemy_error_raises(accounts_ctrl, dumb_account_type, mocker):
     """test get_account_type when a sqlalchemy error occur"""
@@ -190,3 +193,38 @@ async def test_get_account_when_sqlalchemy_error_raises(accounts_ctrl, dumb_acco
 
     assert e.value.detail == 'Something went wrong getting the account.'
     assert e.value.code == HTTPStatus.INTERNAL_SERVER_ERROR
+
+
+async def test_query_select(accounts_ctrl, dumb_account):
+    """test query with a select statement"""
+    stmt = select(accounts_ctrl._account_model)
+    account = await accounts_ctrl.query(stmt)
+
+    assert dict(account[0]) == dict(dumb_account)
+
+
+async def test_query_update(accounts_ctrl, dumb_account):
+    """test query with a update statement"""
+    model = accounts_ctrl._account_model
+    values = {'number': '0003330007'}
+
+    stmt = update(model).where(model.id == dumb_account.id)
+    updated = await accounts_ctrl.query(stmt, **values)
+    account_updated = await accounts_ctrl.get_account('id', dumb_account.id)
+    
+    assert updated
+    assert account_updated.number == values['number']
+
+
+async def test_query_when_exception_raises(accounts_ctrl, dumb_account, mocker):
+    """test query when some exception raises"""
+    mocker.patch("core.accounts.controllers.DB.execute", side_effect=SQLAlchemyError)
+    model = accounts_ctrl._account_model
+    values = {'number': '0003330007'}
+
+    stmt = update(model).where(model.id == dumb_account.id)
+    with pytest.raises(AccountDatabaseException) as e:
+        await accounts_ctrl.query(stmt, **values)
+    
+    assert e.value.code == HTTPStatus.INTERNAL_SERVER_ERROR
+    assert e.match('^Invalid query statement: ')

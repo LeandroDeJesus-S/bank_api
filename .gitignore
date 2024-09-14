@@ -4,6 +4,7 @@
 *.mwb*
 .coverage
 *.db
+*.sql*
 htmlcov/
 logs/
 .mypy_cache

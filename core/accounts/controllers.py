@@ -59,6 +59,7 @@ class AccountsController:
             bool: True if the account was created
         """
         self.__check_fields(list(mapping.keys()), self._account_model)
+        self._account_model(**mapping).validate()
 
         try:
             stmt = insert(self._account_model).values(**mapping)
@@ -123,6 +124,17 @@ class AccountsController:
         except SQLAlchemyError:
             raise AccountDatabaseException(
                 "Something went wrong creating the account type."
+            )
+
+    async def query(self, stmt, **values):
+        try:
+            if stmt._is_select_statement:
+                return await self._db.fetch_all(stmt, values)
+            return await self._db.execute(stmt, values)
+
+        except Exception as e:
+            raise AccountDatabaseException(
+                f'Invalid query statement: {e}'
             )
 
     def __check_fields(

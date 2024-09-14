@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from core.users import routes as user_routes
+from core.accounts import routes as account_routes
 from core.database import Base, DB, engine
 
 
@@ -11,7 +12,9 @@ async def lifespan(app):
     import core.users.models as user_models
     import core.accounts.models as acct_models
 
-    Base.metadata.create_all(engine)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
     await DB.connect()
     yield
     await DB.disconnect()
@@ -19,3 +22,4 @@ async def lifespan(app):
 
 api = FastAPI(lifespan=lifespan)
 api.include_router(user_routes.router)
+api.include_router(account_routes.router)
