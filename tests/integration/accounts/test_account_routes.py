@@ -1,9 +1,8 @@
 from http import HTTPStatus
 
 import pytest
-from sqlalchemy import select
 
-from core.exceptions import AccountDatabaseException
+from core.exceptions import DatabaseException
 
 async def test_create_account_success(client, dumb_user, dumb_account_type):
     """test create account with valid data"""
@@ -128,7 +127,7 @@ async def test_get_account_non_existent_id(client, dumb_account):
 
 async def test_get_account_when_some_validation_exception_raises(client, dumb_account, mocker):
     """test get a account with an invalid id"""
-    mocker.patch('core.accounts.routes.AccountsController.get_account', side_effect=AccountDatabaseException('validation exception', code=HTTPStatus.UNPROCESSABLE_ENTITY))
+    mocker.patch('core.accounts.routes.AccountController.get', side_effect=DatabaseException('validation exception', code=HTTPStatus.UNPROCESSABLE_ENTITY))
     account_id = dumb_account.id
 
     response = await client.get(f'/accounts/{account_id}')
@@ -143,8 +142,7 @@ async def test_list_accounts_success(
     client, five_dumb_accounts, accounts_ctrl, limit, offset
 ):
     """test list account types params"""
-    stmt = select(accounts_ctrl._account_model).limit(limit).offset(offset)
-    all_accounts = await accounts_ctrl.query(stmt)
+    all_accounts = await accounts_ctrl.all(limit, offset)
     expected_ids = [acc.id for acc in all_accounts]
 
     response = await client.get(
@@ -158,12 +156,12 @@ async def test_list_accounts_success(
 
 
 async def test_list_accounts_fail(
-    client, five_dumb_accounts, accounts_ctrl, mocker
+    client, five_dumb_accounts, mocker
 ):
     """test list account types when validation exception raises"""
     mocker.patch(
-        "core.accounts.routes.AccountsController.query",
-        side_effect=AccountDatabaseException('fail'),
+        "core.accounts.routes.AccountController.query",
+        side_effect=DatabaseException('fail'),
     )
 
     response = await client.get("/accounts/")

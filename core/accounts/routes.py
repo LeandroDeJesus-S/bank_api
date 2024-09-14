@@ -8,7 +8,7 @@ from core.exceptions import ValidationException
 from core.users.controllers import UserController
 
 from . import schemas
-from .controllers import AccountsController
+from .controllers import AccountController, AccountTypeController
 
 router = APIRouter(prefix="/accounts", tags=["accounts"])
 
@@ -22,18 +22,18 @@ router = APIRouter(prefix="/accounts", tags=["accounts"])
 )
 async def create_account_type(
     acc_type_data: schemas.AccountTypeInSchema,
-    ctrl: AccountsController = Depends(AccountsController),
+    ctrl: AccountTypeController = Depends(AccountTypeController),
 ):
     data = acc_type_data.model_dump()
     try:
-        if await ctrl.get_account_type("type", acc_type_data.type):
+        if await ctrl.get("type", acc_type_data.type):
             raise HTTPException(
                 status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
                 detail="account type already exists.",
             )
 
-        await ctrl.create_account_type(**data)
-        created = await ctrl.get_account_type(by="type", value=acc_type_data.type)
+        await ctrl.create(**data)
+        created = await ctrl.get("type", acc_type_data.type)
         return created
 
     except ValidationException as e:
@@ -44,10 +44,10 @@ async def create_account_type(
 async def list_account_types(
     limit: int = 100,
     offset: int = 0,
-    ctrl: AccountsController = Depends(AccountsController),
+    ctrl: AccountTypeController = Depends(AccountTypeController),
 ):
     try:
-        stmt = select(ctrl._account_type_model).limit(limit).offset(offset)
+        stmt = select(ctrl.model).limit(limit).offset(offset)
         account_types = await ctrl.query(stmt)
         return account_types
 
@@ -64,7 +64,8 @@ async def list_account_types(
 )
 async def create_account(
     account_data: schemas.AccountInSchema,
-    ctrl: AccountsController = Depends(AccountsController),
+    account_ctrl: AccountController = Depends(AccountController),
+    account_type_ctrl: AccountTypeController = Depends(AccountTypeController),
     user_ctrl: UserController = Depends(UserController),
 ):
     data = account_data.model_dump()
@@ -75,22 +76,22 @@ async def create_account(
                 status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail="invalid user id"
             )
 
-        acc_type = await ctrl.get_account_type("id", account_data.account_type_id)
+        acc_type = await account_type_ctrl.get("id", account_data.account_type_id)
         if not acc_type:
             raise HTTPException(
                 status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
                 detail="invalid account type id",
             )
 
-        number_exists = await ctrl.get_account("number", account_data.number)
+        number_exists = await account_ctrl.get("number", account_data.number)
         if number_exists:
             raise HTTPException(
                 status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
                 detail="account number already exists.",
             )
 
-        await ctrl.create_account(**data)
-        account = await ctrl.get_account(by="number", value=account_data.number)
+        await account_ctrl.create(**data)
+        account = await account_ctrl.get("number", account_data.number)
         return account
 
     except ValidationException as e:
@@ -102,9 +103,9 @@ async def create_account(
     response_model=schemas.AccountOutSchema,
     summary="Retorna a conta com o id passado.",
 )
-async def get_account(id: int, ctrl: AccountsController = Depends(AccountsController)):
+async def get_account(id: int, ctrl: AccountController = Depends(AccountController)):
     try:
-        account = await ctrl.get_account(by="id", value=id)
+        account = await ctrl.get("id", id)
         if account is None:
             raise HTTPException(
                 status_code=HTTPStatus.NOT_FOUND, detail="account not found"
@@ -119,10 +120,10 @@ async def get_account(id: int, ctrl: AccountsController = Depends(AccountsContro
 async def list_accounts(
     limit: int = 100,
     offset: int = 0,
-    ctrl: AccountsController = Depends(AccountsController),
+    ctrl: AccountController = Depends(AccountController),
 ):
     try:
-        stmt = select(ctrl._account_model).limit(limit).offset(offset)
+        stmt = select(ctrl.model).limit(limit).offset(offset)
         accounts = await ctrl.query(stmt)
         return accounts
 

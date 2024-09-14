@@ -6,7 +6,7 @@ from sqlalchemy import DECIMAL, TIMESTAMP, Enum, ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from core import exceptions, validators
-from core.database import Base
+from core.database.conf import Base
 from core.domain_rules import domain_rules
 
 TRANSACTION_RULES = domain_rules.transaction_rules

@@ -95,7 +95,7 @@ async def update_user(
                 status_code=HTTPStatus.BAD_REQUEST, detail="Invalid data."
             )
 
-        updated = await ctrl.update_user(id, **data)
+        updated = await ctrl.update_(id, **data)
         if updated:
             updated_user = await ctrl.get(where_field="id", equals_to=id)
             output = UserOutSchema.model_validate(updated_user)
@@ -117,7 +117,7 @@ async def update_user(
 )
 async def delete_user(id: int, ctrl: UserController = Depends(UserController)):
     try:
-        await ctrl.delete_user(id)
+        await ctrl.delete_(id)
 
     except ValidationException as e:
         raise HTTPException(status_code=e.code, detail=e.detail)

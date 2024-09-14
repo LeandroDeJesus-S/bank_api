@@ -2,7 +2,7 @@ from databases import Database
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.orm import declarative_base
 
-from .settings import settings
+from core.settings import settings
 
 DB = Database(settings.DATABASE_URI)
 Base = declarative_base()

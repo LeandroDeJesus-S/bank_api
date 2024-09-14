@@ -198,7 +198,7 @@ async def test_update_user_when_validation_exception_raises(client, mocker, dumb
     user_id = 1
     data = {'username': 'username'}
 
-    mocker.patch('core.users.routes.UserController.update_user', side_effect=UserDatabaseException('exception'))
+    mocker.patch('core.users.routes.UserController.update_', side_effect=UserDatabaseException('exception'))
 
     response = await client.patch(f'/users/{user_id}', json=data)
     resp_data = response.json()
@@ -226,7 +226,7 @@ async def test_delete_user_non_existent_id(client, dumb_user, user_ctrl):
 
 
 async def test_delete_user_when_raises_validation_exception(client, dumb_user, user_ctrl, mocker):
-    mocker.patch('core.users.routes.UserController.delete_user', side_effect=UserDatabaseException('exception', code=HTTPStatus.BAD_REQUEST))
+    mocker.patch('core.users.routes.UserController.delete_', side_effect=UserDatabaseException('exception', code=HTTPStatus.BAD_REQUEST))
     user_id = 1
 
     response = await client.delete(f'/users/{user_id}')

@@ -5,17 +5,14 @@ from core.domain_rules import domain_rules
 
 class CpfValidator:
     def __init__(self, cpf: str) -> None:
-        self.cpf = cpf
+        self._cpf = cpf
         self.verified_cpf = self.validate()
+
 
     @property
     def cpf(self):
+        self._cpf = "".join(list(map(lambda i: i if i.isnumeric() else "", self._cpf)))
         return self._cpf
-
-    @cpf.setter
-    def cpf(self, cpf):
-        cpf = "".join(list(map(lambda i: i if i.isnumeric() else "", cpf)))
-        self._cpf = cpf
 
     def calculate_first_digit(self) -> str:
         """Calcula o primeiro digito do cpf
@@ -54,7 +51,7 @@ class CpfValidator:
         Returns:
             str: cpf com calculo do primeiro e segundo digito para validar
         """
-        if self.is_sequence() or not self.has_valid_length():
+        if not self.cpf or self.is_sequence() or not self.has_valid_length():
             return ""
         base = self.cpf[:-2]
         first_digit = self.calculate_first_digit()
@@ -68,14 +65,15 @@ class CpfValidator:
         Returns:
             bool: True se o cpf é valido ou False se não é valido.
         """
-        return True if self.cpf == self.verified_cpf else False
+        
+        return True if self.cpf and self.cpf == self.verified_cpf else False
 
     def is_sequence(self) -> bool:
         """Verifica se o cpf enviado é uma sequencia Ex; 000.000.000-00
 
         Returns:
             bool: True se for uma sequencia de digitos, False se não for
-        """
+        """        
         verify = self.cpf[0] * 11
         return True if verify == self.cpf else False
 

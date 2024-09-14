@@ -4,7 +4,7 @@ from fastapi import FastAPI
 
 from core.users import routes as user_routes
 from core.accounts import routes as account_routes
-from core.database import Base, DB, engine
+from core.database.conf import Base, DB, engine
 
 
 @asynccontextmanager

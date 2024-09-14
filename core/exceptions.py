@@ -8,6 +8,12 @@ class ValidationException(Exception):
         self.code = code
 
 
+class DatabaseException(ValidationException):
+    """exceptions related to database operations"""
+    def __init__(self, detail: str, *, code=HTTPStatus.INTERNAL_SERVER_ERROR) -> None:
+        super().__init__(detail, code=code)
+
+
 # user exceptions
 class UserWeakPasswordException(ValidationException):
     """the user password is too weak"""

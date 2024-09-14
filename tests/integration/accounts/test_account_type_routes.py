@@ -3,7 +3,7 @@ from http import HTTPStatus
 import pytest
 from sqlalchemy import select
 
-from core.exceptions import AccountDatabaseException
+from core.exceptions import DatabaseException
 
 
 async def test_create_account_type_success(client):
@@ -49,11 +49,11 @@ async def test_create_account_type_duplicated(client, dumb_account_type):
 
 @pytest.mark.parametrize("limit,offset", [(100, 0), (2, 0), (1, 1), (2, 5)])
 async def test_list_account_types_success(
-    client, five_dumb_account_types, accounts_ctrl, limit, offset
+    client, five_dumb_account_types, account_type_ctrl, limit, offset
 ):
     """test list account types params"""
-    stmt = select(accounts_ctrl._account_type_model).limit(limit).offset(offset)
-    all_acc_types = await accounts_ctrl.query(stmt)
+    stmt = select(account_type_ctrl.model).limit(limit).offset(offset)
+    all_acc_types = await account_type_ctrl.query(stmt)
     expected_data = [dict(acc_t) for acc_t in all_acc_types]
 
     response = await client.get(
@@ -66,12 +66,12 @@ async def test_list_account_types_success(
 
 
 async def test_list_account_types_fail(
-    client, five_dumb_account_types, accounts_ctrl, mocker
+    client, five_dumb_account_types, mocker
 ):
     """test list account types when validation exception raises"""
     mocker.patch(
-        "core.accounts.routes.AccountsController.query",
-        side_effect=AccountDatabaseException('fail'),
+        "core.accounts.routes.AccountTypeController.query",
+        side_effect=DatabaseException('fail'),
     )
 
     response = await client.get("/accounts/types")

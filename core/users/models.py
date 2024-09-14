@@ -5,7 +5,7 @@ from sqlalchemy import Date, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core import exceptions
-from core.database import Base
+from core.database.conf import Base
 from core.domain_rules import domain_rules
 from core import validators
 

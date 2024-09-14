@@ -10,7 +10,7 @@ from core.settings import settings
 
 settings.DATABASE_URI = 'sqlite+aiosqlite:///test.db'
 
-from core.database import DB, Base, engine  # noqa: F401 , E402
+from core.database.conf import DB, Base, engine  # noqa: F401 , E402
 from core.users.models import User  # noqa: F401 , E402
 from core.accounts.models import AccountType, Account  # noqa: F401 , E402
 
@@ -39,6 +39,13 @@ async def db_clean(db_create):
 
         except Exception as e:
             print(f"Erro ao limpar a tabela {table.name}: {e}")
+
+
+@pyt.fixture
+def db_ctrl():
+    from core.database.controller import DatabaseController
+    ctrl = DatabaseController
+    return ctrl
 
 
 @pyt.fixture
@@ -139,42 +146,52 @@ def password_controller():
 @pyt.fixture
 def accounts_ctrl():
     """return the instance of the accounts controller"""
-    from core.accounts.controllers import AccountsController
+    from core.accounts.controllers import AccountController
 
-    ctrl = AccountsController()
+    ctrl = AccountController()
     return ctrl
 
 
 @pyt.fixture
-async def dumb_account_type(accounts_ctrl):
-    await accounts_ctrl.create_account_type(
+def account_type_ctrl():
+    """return the instance of the accounts controller"""
+    from core.accounts.controllers import AccountTypeController
+
+    ctrl = AccountTypeController()
+    return ctrl
+
+
+@pyt.fixture
+async def dumb_account_type(account_type_ctrl):
+    """creates and return an account type"""
+    await account_type_ctrl.create(
         id=1,
         type='corrente',
     )
-    acc_typ = await accounts_ctrl.get_account_type(by='id', value=1)
+    acc_typ = await account_type_ctrl.get('id', 1)
     return acc_typ
 
 
 @pyt.fixture
-async def five_dumb_account_types(accounts_ctrl, faker):
+async def five_dumb_account_types(account_type_ctrl, faker):
     """creates five dumb account types"""
-    stmt = insert(accounts_ctrl._account_type_model).values(
+    stmt = insert(account_type_ctrl.model).values(
         [{'type': faker.word()} for i in range(5)]
     )
-    await accounts_ctrl.query(stmt)
+    await account_type_ctrl.query(stmt)
 
 
 @pyt.fixture
 async def dumb_account(dumb_user, dumb_account_type, accounts_ctrl):
     """create and return an account"""
-    await accounts_ctrl.create_account(
+    await accounts_ctrl.create(
         id=1,
         number='0123456789',
         amount=Decimal('0'),
         user_id=dumb_user.id,
         account_type_id=dumb_account_type.id
     )
-    acc = await accounts_ctrl.get_account('id', 1)
+    acc = await accounts_ctrl.get('id', 1)
     return acc
 
 
@@ -182,13 +199,17 @@ async def dumb_account(dumb_user, dumb_account_type, accounts_ctrl):
 async def five_dumb_accounts(five_dumb_users, dumb_account_type, accounts_ctrl, user_ctrl, faker):
     """create five dumb accounts"""
     all_users = await user_ctrl.all()
-    for user in all_users:
-        await accounts_ctrl.create_account(
-            number=f'{faker.random_number(10, fix_len=True)}',
-            amount=Decimal('0'),
-            user_id=user.id,
-            account_type_id=dumb_account_type.id
-        )
+    stmt = insert(accounts_ctrl.model).values(
+        [
+            {
+                'number': f'{faker.random_number(10, fix_len=True)}',
+                'amount': Decimal('0'),
+                'user_id': user.id,
+                'account_type_id': dumb_account_type.id
+            } for user in all_users
+        ]
+    )
+    await accounts_ctrl.query(stmt)
 
 
 @pyt.fixture
