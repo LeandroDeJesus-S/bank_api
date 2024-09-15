@@ -233,3 +233,12 @@ def ini_account_type():
         type='corrente'
     )
     return usr
+
+
+# transaction
+@pyt.fixture
+def transaction_ctrl():
+    """return the transaction controller"""
+    from core.transactions.controllers import TransactionController
+    ctrl = TransactionController()
+    return ctrl

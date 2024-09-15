@@ -36,10 +36,10 @@ class TransactionRules(BaseModel):
     """stores all the business rules related to the transactions part"""
 
     MIN_DEPOSIT_VALUE: Decimal = Decimal("0.01")
-    MAX_DEPOSIT_VALUE: Decimal | None = None
+    MAX_DEPOSIT_VALUE: Decimal = Decimal("1_000_000_000.00")
 
-    MIN_CASHOUT_VALUE: Decimal = Decimal("0.01")
-    MAX_CASHOUT_VALUE: Decimal = Decimal("5_000")
+    MIN_WITHDRAW_VALUE: Decimal = Decimal("0.01")
+    MAX_WITHDRAW_VALUE: Decimal = Decimal("5_000")
 
     MIN_TRANSFER_VALUE: Decimal = Decimal("0.01")
     MAX_TRANSFER_VALUE: Decimal = Decimal("10_000")

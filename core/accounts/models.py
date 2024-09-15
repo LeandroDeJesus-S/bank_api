@@ -24,7 +24,7 @@ class AccountType(Base):
     )
 
     account: Mapped[List["Account"]] = relationship(back_populates="account_type")
-
+    
     def validate(self):
         self.validate_type()
 
@@ -59,7 +59,14 @@ class Account(Base):
 
     user: Mapped["User"] = relationship(back_populates="accounts")  # type: ignore # noqa: F821
     account_type: Mapped["AccountType"] = relationship(back_populates="account")
-
+    
+    sent_transactions: Mapped[List["Transaction"]] = relationship(  # type: ignore # noqa: F821
+        back_populates="from_account", foreign_keys="[Transaction.from_account_id]"
+    )
+    received_transactions: Mapped[List["Transaction"]] = relationship(  # type: ignore # noqa: F821
+        back_populates="to_account", foreign_keys="[Transaction.to_account_id]"
+    )
+    
     def validate(self):
         """method that call the validation field methods"""
         self.validate_number()

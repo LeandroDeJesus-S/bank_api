@@ -75,21 +75,22 @@ class DatabaseController:
                 "Error fetching data.",
             ) from exc
 
-    async def create(self, **user_mapping: Mapping) -> int | None:
+    async def create(self, **mapping: Mapping[Any,Any]) -> int | None:
         """creates a new registry in database
 
         Returns:
             int: 1 if created with success
         """
-        self.__check_fields(list(user_mapping.keys()))
+        self.__check_fields(list(mapping.keys()))
 
         try:
-            self._model(**user_mapping).validate()
+            self._model(**mapping).validate()
 
             stmt = insert(self._model)
-            return await self._db.execute(stmt, values=user_mapping)
+            return await self._db.execute(stmt, values=mapping)
 
         except SQLAlchemyError as exc:
+            print(str(exc))
             raise DatabaseException("Creation fail.") from exc
 
     async def update_(self, id: int, **mapping: Mapping) -> bool:
