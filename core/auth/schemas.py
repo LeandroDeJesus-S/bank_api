@@ -27,3 +27,18 @@ class AuthSchema(BaseModel):
     """schema with the necessary data to auth the user"""
     username: str
     password: str
+
+
+class RoleInSchema(BaseModel):
+    """input role schema"""
+    name: str
+
+
+class RoleOutSchema(RoleInSchema):
+    """output role schema"""
+    id: int
+
+
+class AddRoleSchema(BaseModel):
+    user_id: int
+    role_id: int

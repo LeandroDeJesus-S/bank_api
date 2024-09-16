@@ -14,6 +14,7 @@ USER_RULES = domain_rules.user_rules
 
 class User(Base):
     """the user entity representation"""
+
     __tablename__ = "user"
 
     id: Mapped[int] = mapped_column(
@@ -47,7 +48,10 @@ class User(Base):
         nullable=False,
     )
 
-    accounts: Mapped[List['Account']] = relationship(back_populates='user')  # type: ignore # noqa: F821
+    accounts: Mapped[List["Account"]] = relationship(back_populates="user")  # type: ignore # noqa: F821
+    roles: Mapped[List["Role"]] = relationship(  # type: ignore # noqa: F821
+        secondary="user_role", back_populates="users"
+    )
 
     def validate(self):
         """call all functions that validates the fields"""
@@ -74,7 +78,7 @@ class User(Base):
         """validates the password strength"""
         if not validators.strong_password_validator(self.password):
             raise exceptions.UserWeakPasswordException(
-                'A senha é muito fraca.',
+                "A senha é muito fraca.",
             )
 
     def validate_first_name(self):
@@ -84,9 +88,7 @@ class User(Base):
             USER_RULES.FIRSTNAME_REGEX_PATTERN, self.first_name, strict=True
         )
         if not valid:
-            raise exceptions.UserInvalidNameException(
-                detail='Primeiro nome inválido.'
-            )
+            raise exceptions.UserInvalidNameException(detail="Primeiro nome inválido.")
 
     def validate_last_name(self):
         """validates if the last name contains only letters and has the
@@ -95,9 +97,7 @@ class User(Base):
             USER_RULES.LASTNAME_REGEX_PATTERN, self.last_name, strict=True
         )
         if not valid:
-            raise exceptions.UserInvalidNameException(
-                detail='Sobrenome inválido.'
-            )
+            raise exceptions.UserInvalidNameException(detail="Sobrenome inválido.")
 
     def validate_cpf(self):
         """validates if the user's cpf is valid and return the cpf without punctuations"""

@@ -71,6 +71,7 @@ class DatabaseController:
             return users
 
         except SQLAlchemyError as exc:
+            print(str(exc))
             raise DatabaseException(
                 "Error fetching data.",
             ) from exc

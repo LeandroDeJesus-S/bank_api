@@ -3,7 +3,7 @@ from decimal import Decimal
 
 from httpx import AsyncClient, ASGITransport
 import pytest_asyncio as pyt
-from sqlalchemy import insert
+from sqlalchemy import and_, insert, select
 
 from core.domain_rules import domain_rules
 from core.settings import settings
@@ -14,6 +14,7 @@ from core.database.conf import DB, Base, engine  # noqa: F401 , E402
 from core.users.models import User  # noqa: F401 , E402
 from core.accounts.models import AccountType, Account  # noqa: F401 , E402
 from core.transactions.models import Transaction, TransactionType # noqa: F401 , E402
+from core.auth.models import Role, UserRole  # noqa: E402, F401
 
 
 # general fixtures
@@ -141,6 +142,72 @@ def password_controller():
     from core.auth.controllers import PasswordController
     ctrl = PasswordController()
     return ctrl
+
+
+@pyt.fixture
+def role_controller():
+    from core.auth.controllers import RoleController
+    ctrl = RoleController()
+    return ctrl
+
+
+@pyt.fixture
+def user_role_controller():
+    from core.auth.controllers import UserRoleController
+    ctrl = UserRoleController()
+    return ctrl
+
+
+@pyt.fixture
+async def dumb_role(role_controller):
+    """create and return a role"""
+    await role_controller.create(
+        id=1,
+        name='dumb',
+    )
+    role = await role_controller.get('id', 1)
+    return role
+
+
+@pyt.fixture
+async def dumb_user_role(user_role_controller, dumb_role, dumb_user):
+    """create and return a user role"""
+    await user_role_controller.create(
+        user_id=dumb_user.id,
+        role_id=dumb_role.id
+    )
+    stmt = select(user_role_controller.model).where(
+        and_(
+            user_role_controller.model.user_id == dumb_user.id,
+            user_role_controller.model.role_id == dumb_role.id
+        )
+    )
+    role = await user_role_controller.query(stmt)
+    return role[0]
+
+
+@pyt.fixture
+async def admin_role(role_controller):
+    await role_controller.create(name='admin')
+    role = await role_controller.get('id', 1)
+    return role
+
+
+@pyt.fixture
+async def client_role(role_controller):
+    await role_controller.create(name='client')
+    role = await role_controller.get('id', 1)
+    return role
+
+
+@pyt.fixture
+async def five_dumb_roles(role_controller, faker):
+    """create five dumb roles"""
+    roles = [
+        {'name': faker.word()} for _ in range(5)
+    ]
+    stmt = insert(role_controller.model).values(roles)
+    await role_controller.query(stmt)
 
 
 # accounts fixtures

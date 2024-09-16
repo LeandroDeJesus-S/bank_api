@@ -4,8 +4,11 @@ from typing import Any
 
 import jwt
 from passlib.hash import pbkdf2_sha256
+from sqlalchemy import select
 
 from core.exceptions import JWTException
+from core.database.controller import DatabaseController
+from .models import Role, UserRole
 
 
 class JWTController:
@@ -130,3 +133,27 @@ class PasswordController:
         """
         pw_hash = password_hash.removeprefix(self._hash_prefix)
         return self._hasher.verify(password_raw, pw_hash)
+
+
+class RoleController(DatabaseController):
+    def __init__(self) -> None:
+        super().__init__(model=Role)
+
+
+class UserRoleController(DatabaseController):
+    def __init__(self) -> None:
+        super().__init__(model=UserRole)
+    
+    async def check_role(self, user, role) -> bool:
+        """check if the given user has the given role.
+
+        Args:
+            user (User): the user entity instance.
+            role (Role): the role entity instance.
+
+        Returns:
+            bool: True the the user has the role.
+        """
+        stmt = select(self.model.user_id == user.id, self.model.role_id == role.id)
+        has = await self.query(stmt)
+        return bool(has)
