@@ -83,7 +83,7 @@ class TransactionController(DatabaseController):
 
         if account_from.id != account_to.id:
             raise exceptions.TransactionException(
-                "you can only to deposit on your account", code=HTTPStatus.INTERNAL_SERVER_ERROR
+                "you can only to deposit on your account"
             )
 
     def validate_withdraw(self, type, value, to_account, from_account):
@@ -129,5 +129,5 @@ class TransactionController(DatabaseController):
                 f"Invalid transference value. (min: {min_}, max: {max_})"
             )
 
-        if to_account.amount < value:
+        if from_account.amount < value:
             raise exceptions.TransactionException("Insufficient funds.")

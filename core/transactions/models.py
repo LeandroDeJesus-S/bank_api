@@ -11,9 +11,9 @@ from core.database.conf import Base
 
 
 class TransactionType(enum.Enum):
-    deposit = 0
-    withdraw = 1
-    transference = 2
+    deposit = 'deposit'
+    withdraw = 'withdraw'
+    transference = 'transference'
 
 
 class Transaction(Base):

@@ -13,6 +13,7 @@ settings.DATABASE_URI = 'sqlite+aiosqlite:///test.db'
 from core.database.conf import DB, Base, engine  # noqa: F401 , E402
 from core.users.models import User  # noqa: F401 , E402
 from core.accounts.models import AccountType, Account  # noqa: F401 , E402
+from core.transactions.models import Transaction, TransactionType # noqa: F401 , E402
 
 
 # general fixtures
@@ -32,10 +33,10 @@ async def db_create():
 
 @pyt.fixture(autouse=True)
 async def db_clean(db_create):
-    """clean all tables data after each test function execution""" 
+    """clean all tables data after each test function execution"""
     for table in Base.metadata.sorted_tables:
         try:
-            await DB.execute(f"DELETE FROM {table.name};")
+            await DB.execute(f"DELETE FROM '{table.name}';")
 
         except Exception as e:
             print(f"Erro ao limpar a tabela {table.name}: {e}")
@@ -196,6 +197,20 @@ async def dumb_account(dumb_user, dumb_account_type, accounts_ctrl):
 
 
 @pyt.fixture
+async def dumb_account_10amount(dumb_user, dumb_account_type, accounts_ctrl):
+    """create and return an account for the dumb_user with 10 of amount"""
+    await accounts_ctrl.create(
+        id=1,
+        number='0123456789',
+        amount=Decimal('10'),
+        user_id=dumb_user.id,
+        account_type_id=dumb_account_type.id
+    )
+    acc = await accounts_ctrl.get('id', 1)
+    return acc
+
+
+@pyt.fixture
 async def five_dumb_accounts(five_dumb_users, dumb_account_type, accounts_ctrl, user_ctrl, faker):
     """create five dumb accounts"""
     all_users = await user_ctrl.all()
@@ -204,6 +219,23 @@ async def five_dumb_accounts(five_dumb_users, dumb_account_type, accounts_ctrl, 
             {
                 'number': f'{faker.random_number(10, fix_len=True)}',
                 'amount': Decimal('0'),
+                'user_id': user.id,
+                'account_type_id': dumb_account_type.id
+            } for user in all_users
+        ]
+    )
+    await accounts_ctrl.query(stmt)
+
+
+@pyt.fixture
+async def two_dumb_accounts_10amount(five_dumb_users, dumb_account_type, accounts_ctrl, user_ctrl, faker):
+    """create two dumb accounts for two dumb users with 10 of amount"""
+    all_users = await user_ctrl.all(limit=2)
+    stmt = insert(accounts_ctrl.model).values(
+        [
+            {
+                'number': f'{faker.random_number(10, fix_len=True)}',
+                'amount': Decimal('10'),
                 'user_id': user.id,
                 'account_type_id': dumb_account_type.id
             } for user in all_users
@@ -242,3 +274,18 @@ def transaction_ctrl():
     from core.transactions.controllers import TransactionController
     ctrl = TransactionController()
     return ctrl
+
+
+@pyt.fixture
+async def five_dumb_transactions(transaction_ctrl, dumb_account):
+    """create five dumb transactions"""
+    transactions = [
+        {
+            'from_account_id': dumb_account.id,
+            'to_account_id': dumb_account.id,
+            'type': TransactionType.deposit,
+            'value': Decimal('10')
+        } for _ in range(5)
+    ]
+    stmt = insert(transaction_ctrl.model).values(transactions)
+    await transaction_ctrl.query(stmt)
