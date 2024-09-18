@@ -218,3 +218,18 @@ async def test_create_transaction_to_diff_user(
 
     assert response.status_code == HTTPStatus.FORBIDDEN
     assert response.json()['detail'] == "You can only make a transaction from your own account"
+
+
+@pytest.mark.parametrize("limit,offset,expect_len", [(100, 2, 3), (2, 0, 2),])
+async def test_list_account_transactions_success(client, five_dumb_transactions, limit, offset, expect_len, transaction_ctrl, dumb_token, dumb_user):
+    response = await client.get(
+        "/transactions/me",
+        params={"limit": limit, "offset": offset},
+        headers=dumb_token
+    )
+    resp_data = response.json()
+    unique_ids = {d['from_account_id'] for d in resp_data}
+
+    assert response.status_code == HTTPStatus.OK
+    assert len(resp_data) == expect_len
+    assert unique_ids == {1}

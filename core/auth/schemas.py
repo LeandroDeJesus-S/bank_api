@@ -6,14 +6,6 @@ from pydantic import BaseModel
 
 class JWTPayload(BaseModel):
     """represents a sent JWT payload
-
-    Args:
-        iss: str
-        sub: str
-        aud: Optional[str]
-        iat: Optional[datetime]
-        typ: Optional[str]
-        exp: Optional[datetime]
     """
     iss: str = 'bank'
     sub: str 
@@ -46,10 +38,6 @@ class AddRoleSchema(BaseModel):
 
 class TokenSchema(BaseModel):
     """The jwt token response schema
-
-    Args:
-        access_token (str): the generated access token
-        token_type (str, Optional): the type of the token. Defaults to 'bearer'.
     """
     access_token: str
     token_type: str = 'bearer'

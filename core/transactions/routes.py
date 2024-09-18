@@ -4,6 +4,7 @@ from typing import Annotated, List
 from databases.interfaces import Record
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy import select
 
 from .controllers import TransactionController
 from core.accounts.controllers import AccountController
@@ -26,6 +27,27 @@ async def list_transactions(
     jwt_ctrl.validate_token(credentials, required_roles="admin")
 
     transactions = await transaction_ctrl.all(limit, offset)
+    return transactions
+
+
+@router.get("/me", response_model=List[TransactionOutSchema])
+async def list_account_transactions(
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(bearer)],
+    limit: int = TransactionController.DEFAULT_LIMIT,
+    offset: int = TransactionController.DEFAULT_OFFSET,
+    transaction_ctrl: TransactionController = Depends(TransactionController),
+    account_ctrl: AccountController = Depends(AccountController),
+    user_ctrl: UserController = Depends(UserController),
+) -> List[Record]:
+    username = jwt_ctrl.validate_token(credentials)
+    user = await user_ctrl.get('username', username)
+    account = await account_ctrl.get('user_id', user.id)  # type: ignore
+    
+    stmt = select(transaction_ctrl.model).where(
+        transaction_ctrl.model.from_account_id == account.id  # type: ignore
+    ).limit(limit).offset(offset)
+
+    transactions = await transaction_ctrl.query(stmt)
     return transactions
 
 
