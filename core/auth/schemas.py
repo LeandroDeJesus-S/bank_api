@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 from pydantic import BaseModel
 
@@ -15,11 +15,11 @@ class JWTPayload(BaseModel):
         typ: Optional[str]
         exp: Optional[datetime]
     """
-    iss: str = 'the-bank'
-    sub: str
-    aud: Optional[str] = None
+    iss: str = 'bank'
+    sub: str 
+    aud: str | List[str]
     iat: Optional[datetime] = None
-    typ: Optional[str] = None
+    typ: Optional[str] = 'Bearer'
     exp: Optional[datetime] = None
 
 
@@ -42,3 +42,14 @@ class RoleOutSchema(RoleInSchema):
 class AddRoleSchema(BaseModel):
     user_id: int
     role_id: int
+
+
+class TokenSchema(BaseModel):
+    """The jwt token response schema
+
+    Args:
+        access_token (str): the generated access token
+        token_type (str, Optional): the type of the token. Defaults to 'bearer'.
+    """
+    access_token: str
+    token_type: str = 'bearer'

@@ -153,83 +153,99 @@ async def test_create_user_when_validation_exception_raises(client, mocker):
     assert resp_data == {'detail': "exception"}
 
 
-async def test_update_user(client, dumb_user):
+async def test_update_user(client, dumb_user, dumb_token):
     user_id = dumb_user.id
     data = {'username': 'updated_username'}
-    response = await client.patch(f'/users/{user_id}', json=data)
+    response = await client.patch(
+        f'/users/{user_id}', json=data, headers=dumb_token
+    )
     resp_data = response.json()
 
     assert response.status_code == HTTPStatus.OK
     assert resp_data['username'] == data['username']  # type: ignore
 
 
-async def test_update_user_invalid_id(client, dumb_user):
+async def test_update_user_if_not_updated(client, dumb_user, dumb_token, mocker):
+    """test the update_user endpoint when the update operation has no effect in the database."""
+    mocker.patch('core.users.routes.UserController.update_', return_value=0)
+
+    user_id = dumb_user.id
+    data = {'username': 'updated_username'}
+    response = await client.patch(
+        f'/users/{user_id}', json=data, headers=dumb_token
+    )
+    resp_data = response.json()
+
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert resp_data['detail'] == "Fail on update, please verify and try again."  # type: ignore
+
+
+async def test_update_user_invalid_id(client, dumb_user, dumb_token):
     user_id = 'x'
     data = {'username': 'updated_username'}
-    response = await client.patch(f'/users/{user_id}', json=data)
+    response = await client.patch(f'/users/{user_id}', json=data, headers=dumb_token)
     resp_data = response.json()
 
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
     assert resp_data['detail'][0]['msg'] == 'Input should be a valid integer, unable to parse string as an integer'  # type: ignore
 
 
-async def test_update_user_non_existent_id(client):
-    user_id = 1
+async def test_update_user_non_existent_id(client, dumb_token):
+    user_id = 1111
     data = {'username': 'updated_username'}
-    response = await client.patch(f'/users/{user_id}', json=data)
+    response = await client.patch(f'/users/{user_id}', json=data, headers=dumb_token)
     resp_data = response.json()
 
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-    assert resp_data['detail'] == 'Não foi possivél atualizar, verifique e tente novamente.'  # type: ignore
+    assert resp_data['detail'] == "Invalid user id."  # type: ignore
 
 
-async def test_update_user_non_existent_field(client, dumb_user):
+async def test_update_user_non_existent_field(client, dumb_user, dumb_token):
     user_id = dumb_user.id
     data = {'invalid_field': 'invalid_field'}
 
-    response = await client.patch(f'/users/{user_id}', json=data)
+    response = await client.patch(f'/users/{user_id}', json=data, headers=dumb_token)
     resp_data = response.json()
 
     assert response.status_code == HTTPStatus.BAD_REQUEST
     assert resp_data['detail'] == 'Invalid data.'  # type: ignore
 
 
-async def test_update_user_when_validation_exception_raises(client, mocker, dumb_user):
+async def test_update_user_when_validation_exception_raises(client, mocker, dumb_user, dumb_token):
     user_id = 1
     data = {'username': 'username'}
 
     mocker.patch('core.users.routes.UserController.update_', side_effect=UserDatabaseException('exception'))
 
-    response = await client.patch(f'/users/{user_id}', json=data)
+    response = await client.patch(f'/users/{user_id}', json=data, headers=dumb_token)
     resp_data = response.json()
 
     assert response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
     assert resp_data == {'detail': "exception"}
 
 
-async def test_delete_user(client, dumb_user, user_ctrl):
+async def test_delete_user(client, dumb_user, user_ctrl, dumb_token):
     user_id = dumb_user.id
 
-    response = await client.delete(f'/users/{user_id}')
+    response = await client.delete(f'/users/{user_id}', headers=dumb_token)
     user = await user_ctrl.get('id', user_id)
 
     assert response.status_code == HTTPStatus.NO_CONTENT
     assert user is None
 
 
-async def test_delete_user_non_existent_id(client, dumb_user, user_ctrl):
+async def test_delete_user_non_existent_id(client, dumb_user, user_ctrl, dumb_token):
     user_id = 999
 
-    response = await client.delete(f'/users/{user_id}')
-
+    response = await client.delete(f'/users/{user_id}', headers=dumb_token)
     assert response.status_code == HTTPStatus.NO_CONTENT
 
 
-async def test_delete_user_when_raises_validation_exception(client, dumb_user, user_ctrl, mocker):
+async def test_delete_user_when_raises_validation_exception(client, dumb_user, user_ctrl, mocker, dumb_token):
     mocker.patch('core.users.routes.UserController.delete_', side_effect=UserDatabaseException('exception', code=HTTPStatus.BAD_REQUEST))
     user_id = 1
 
-    response = await client.delete(f'/users/{user_id}')
+    response = await client.delete(f'/users/{user_id}', headers=dumb_token)
     resp_data = response.json()
 
     assert response.status_code == HTTPStatus.BAD_REQUEST

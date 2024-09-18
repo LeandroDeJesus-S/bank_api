@@ -1,10 +1,10 @@
 from decimal import Decimal
-from typing import Any
-from http import HTTPStatus
-from core.database.controller import DatabaseController
-from .models import Transaction, TransactionType
+
 from core import exceptions, validators
+from core.database.controller import DatabaseController
 from core.domain_rules import domain_rules
+
+from .models import Transaction, TransactionType
 
 TRANSACTION_RULES = domain_rules.transaction_rules
 
@@ -38,29 +38,29 @@ class TransactionController(DatabaseController):
                     from_account.id,
                     amount=amount,
                 )
-            
+
             elif type == TransactionType.withdraw:
                 amount = from_account.amount - value
                 await accounts_controller.update_(
                     from_account.id,
                     amount=amount,
                 )
-            
+
             elif type == TransactionType.transference:
                 from_account_amount = from_account.amount - value
                 to_account_amount = to_account.amount + value
 
                 await accounts_controller.update_(
-                    from_account.id, amount=from_account_amount,
+                    from_account.id,
+                    amount=from_account_amount,
                 )
                 await accounts_controller.update_(
-                    to_account.id, amount=to_account_amount,
+                    to_account.id,
+                    amount=to_account_amount,
                 )
-            
+
             else:
-                raise exceptions.TransactionException(
-                    'Invalid transaction type.'
-                )
+                raise exceptions.TransactionException("Invalid transaction type.")
 
         return bool(created)
 

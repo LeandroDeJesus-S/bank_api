@@ -6,11 +6,11 @@ from sqlalchemy import select
 from core.exceptions import DatabaseException
 
 
-async def test_create_account_type_success(client):
+async def test_create_account_type_success(client, admin_token):
     """test create account route with valid data"""
     data = {"type": "poupanca"}
 
-    response = await client.post("/accounts/types", json=data)
+    response = await client.post("/accounts/types", json=data, headers=admin_token)
     resp_data = response.json()
 
     assert response.status_code == HTTPStatus.CREATED
@@ -27,20 +27,20 @@ async def test_create_account_type_success(client):
         ("type", 1),
     ],
 )
-async def test_create_account_type_fail(client, param, value):
+async def test_create_account_type_fail(client, param, value, admin_token):
     """test create account route with invalid data"""
     data = {param: value}
 
-    response = await client.post("/accounts/types", json=data)
+    response = await client.post("/accounts/types", json=data, headers=admin_token)
 
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
 
 
-async def test_create_account_type_duplicated(client, dumb_account_type):
+async def test_create_account_type_duplicated(client, dumb_account_type, admin_token):
     """test create account route with invalid data"""
     data = {"type": dumb_account_type.type}
 
-    response = await client.post("/accounts/types", json=data)
+    response = await client.post("/accounts/types", json=data, headers=admin_token)
     resp_data = response.json()
 
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY

@@ -36,7 +36,7 @@ class DatabaseController:
         Returns:
             Record: the model registry found
         """
-        self.__check_fields([where_field])
+        self._check_fields([where_field])
         try:
             field = getattr(self._model, where_field)
             stmt = select(self._model).where(field == equals_to)
@@ -82,7 +82,7 @@ class DatabaseController:
         Returns:
             int: 1 if created with success
         """
-        self.__check_fields(list(mapping.keys()))
+        self._check_fields(list(mapping.keys()))
 
         try:
             self._model(**mapping).validate()
@@ -104,7 +104,7 @@ class DatabaseController:
         if not isinstance(id, int):
             return False
 
-        self.__check_fields(list(mapping.keys()))
+        self._check_fields(list(mapping.keys()))
 
         try:
             stmt = (
@@ -136,7 +136,7 @@ class DatabaseController:
         except SQLAlchemyError:
             raise DatabaseException("Delete operation fail.")
 
-    def __check_fields(self, fields: Sequence[str]):
+    def _check_fields(self, fields: Sequence[str]):
         """raises DatabaseException if any of the given fields dos not exists."""
         for field in fields:
             if not hasattr(self._model, str(field)):

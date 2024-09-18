@@ -1,15 +1,19 @@
 from http import HTTPStatus
-from typing import List
+from typing import Annotated, List
 
 from databases.interfaces import Record
-from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy import select, or_
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy import or_, select
 
-from .schemas import UserInSchema, UserOutSchema, UserUpSchema
+from core.auth.controllers import JWTController, PasswordController
+
 from .controllers import UserController
-from core.exceptions import ValidationException
+from .schemas import UserInSchema, UserOutSchema, UserUpSchema
 
 router = APIRouter(prefix="/users", tags=["users"])
+bearer = HTTPBearer()
+jwt_ctrl = JWTController()
 
 
 @router.get(
@@ -22,12 +26,8 @@ async def list_users(
     offset: int = UserController.DEFAULT_OFFSET,
     ctrl: UserController = Depends(UserController),
 ) -> List[Record]:
-    try:
-        all_users = await ctrl.all(limit, offset)
-        return all_users
-
-    except ValidationException as e:
-        raise HTTPException(status_code=e.code, detail=e.detail)
+    all_users = await ctrl.all(limit, offset)
+    return all_users
 
 
 @router.get(
@@ -36,48 +36,43 @@ async def list_users(
     summary="Retorna o usuário com respectivo id na base dados.",
 )
 async def get_user(id: int, ctrl: UserController = Depends(UserController)):
-    try:
-        user = await ctrl.get(where_field="id", equals_to=id)
-        if user is None:
-            raise HTTPException(
-                status_code=HTTPStatus.NOT_FOUND, detail="Usuário não encontrado."
-            )
+    user = await ctrl.get(where_field="id", equals_to=id)
+    if user is None:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND, detail="Usuário não encontrado."
+        )
 
-        return UserOutSchema.model_validate(user)
-
-    except ValidationException as e:
-        raise HTTPException(e.code, e.detail)
+    return UserOutSchema.model_validate(user)
 
 
 @router.post(
     "/",
     summary="Adiciona um novo usuário no banco de dados.",
     status_code=HTTPStatus.CREATED,
+    response_model=UserOutSchema,
 )
 async def create_user(
-    user_data: UserInSchema, ctrl: UserController = Depends(UserController)
-) -> UserOutSchema:
-    try:
-        q = select(ctrl._model).where(
-            or_(
-                ctrl._model.cpf == user_data.cpf,
-                ctrl._model.username == user_data.username,
-            )
+    user_data: UserInSchema,
+    ctrl: UserController = Depends(UserController),
+    pw_ctrl: PasswordController = Depends(PasswordController),
+):
+    q = select(ctrl._model).where(
+        or_(
+            ctrl._model.cpf == user_data.cpf,
+            ctrl._model.username == user_data.username,
         )
-        duplicated = await ctrl.query(q)
-        if duplicated:
-            raise HTTPException(
-                HTTPStatus.UNPROCESSABLE_ENTITY,
-                detail="Nome de usuário ou cpf não disponível.",
-            )
+    )
+    duplicated = await ctrl.query(q)
+    if duplicated:
+        raise HTTPException(
+            HTTPStatus.UNPROCESSABLE_ENTITY,
+            detail="Nome de usuário ou cpf não disponível.",
+        )
 
-        await ctrl.create(**user_data.model_dump())
-        created_user = await ctrl.get(where_field="cpf", equals_to=user_data.cpf)
-        output = UserOutSchema.model_validate(created_user)
-        return output
-
-    except ValidationException as e:
-        raise HTTPException(e.code, e.detail)
+    await ctrl.create(**user_data.model_dump())
+    created_user = await ctrl.get(where_field="cpf", equals_to=user_data.cpf)
+    output = UserOutSchema.model_validate(created_user)
+    return output
 
 
 @router.patch(
@@ -86,28 +81,35 @@ async def create_user(
     summary="Atualiza dados do usuário.",
 )
 async def update_user(
-    id: int, user_data: UserUpSchema, ctrl: UserController = Depends(UserController)
+    id: int,
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(bearer)],
+    user_data: UserUpSchema,
+    ctrl: UserController = Depends(UserController),
 ):
-    try:
-        data = user_data.model_dump(exclude_unset=True)
-        if not data:
-            raise HTTPException(
-                status_code=HTTPStatus.BAD_REQUEST, detail="Invalid data."
-            )
+    data = user_data.model_dump(exclude_unset=True)
 
-        updated = await ctrl.update_(id, **data)
-        if updated:
-            updated_user = await ctrl.get(where_field="id", equals_to=id)
-            output = UserOutSchema.model_validate(updated_user)
-            return output
+    if not data:
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Invalid data.")
 
+    user = await ctrl.get("id", id)
+    username = jwt_ctrl.validate_token(credentials)
+
+    if user is None or username != user._mapping["username"]:
         raise HTTPException(
             status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
-            detail="Não foi possivél atualizar, verifique e tente novamente.",
+            detail="Invalid user id.",
         )
 
-    except ValidationException as e:
-        raise HTTPException(e.code, e.detail)
+    updated = await ctrl.update_(id, **data)
+    if updated:
+        updated_user = await ctrl.get(where_field="id", equals_to=id)
+        output = UserOutSchema.model_validate(updated_user)
+        return output
+
+    raise HTTPException(
+        status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+        detail="Fail on update, please verify and try again.",
+    )
 
 
 @router.delete(
@@ -115,9 +117,17 @@ async def update_user(
     status_code=HTTPStatus.NO_CONTENT,
     summary="Deleta um usuário do banco de dados.",
 )
-async def delete_user(id: int, ctrl: UserController = Depends(UserController)):
-    try:
-        await ctrl.delete_(id)
+async def delete_user(
+    id: int,
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(bearer)],
+    ctrl: UserController = Depends(UserController),
+):
+    user = await ctrl.get("id", id)
+    username = jwt_ctrl.validate_token(credentials)
 
-    except ValidationException as e:
-        raise HTTPException(status_code=e.code, detail=e.detail)
+    if user is None or username != user._mapping["username"]:
+        raise HTTPException(
+            status_code=HTTPStatus.NO_CONTENT,
+        )
+
+    await ctrl.delete_(id)
