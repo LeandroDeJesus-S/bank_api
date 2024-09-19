@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
-from typing import Any, List, Optional, Union
+from typing import Any, List, Union
 
 import jwt
 from fastapi.security import HTTPAuthorizationCredentials
