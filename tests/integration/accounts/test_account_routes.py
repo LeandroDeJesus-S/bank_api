@@ -130,12 +130,23 @@ async def test_get_account_success(client, dumb_account, dumb_token):
     assert resp_data['number'] == dumb_account.number
 
 
-async def test_get_account_with_of_a_diff_user(client, dumb_account, five_dumb_accounts, dumb_token):
-    """test create account to a user different of the user authenticated"""
+async def test_get_account_as_admin_success(client, dumb_account, five_dumb_accounts, admin_token):
+    """test get a account of other user having the admin role"""
+    account_id = 4
+
+    response = await client.get(f'/accounts/{account_id}', headers=admin_token)
+    resp_data = response.json()
+    assert response.status_code == HTTPStatus.OK
+    assert resp_data['number'] != dumb_account.number
+
+
+async def test_get_account_of_a_diff_user(client, dumb_account, five_dumb_accounts, dumb_token):
+    """test get account of a user different of the user authenticated where the user has not admin role"""
     account_id = 4
 
     response = await client.get(f'/accounts/{account_id}', headers=dumb_token)
     resp_data = response.json()
+
     assert response.status_code == HTTPStatus.FORBIDDEN
     assert resp_data['detail'] == "This is not your account."
 

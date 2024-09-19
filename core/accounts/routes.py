@@ -6,6 +6,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 
 from core.auth.controllers import JWTController
+from core.exceptions import JWTException
 from core.users.controllers import UserController
 
 from . import schemas
@@ -61,7 +62,7 @@ async def create_account_type(
     "/types",
     response_model=List[schemas.AccountTypeOutSchema],
     summary="Lista todos os tipos de conta disponíveis.",
-    description="Lista todas os tipos de conta presentes no banco de dados."
+    description="Lista todas os tipos de conta presentes no banco de dados.",
 )
 async def list_account_types(
     limit: int = 100,
@@ -89,7 +90,7 @@ async def list_account_types(
     response_model_exclude_unset=True,
     status_code=HTTPStatus.CREATED,
     summary="Cria uma nova conta para o usuário.",
-    description="O usuário precisa estar autenticado e só pode criar uma nova conta para sí mesmo"
+    description="O usuário precisa estar autenticado e só pode criar uma nova conta para sí mesmo",
 )
 async def create_account(
     account_data: schemas.AccountInSchema,
@@ -153,7 +154,8 @@ async def create_account(
     "/{id}",
     response_model=schemas.AccountOutSchema,
     summary="Retorna a conta com o id passado.",
-    description="Retorna uma conta especifico."
+    description="Usuários que possuem a role `admin` podem solicitar qualquer conta, \
+        caso não tenha o usuário autenticado só pode solicitar a própria conta.",
 )
 async def get_account(
     id: int,
@@ -161,7 +163,8 @@ async def get_account(
     ctrl: AccountController = Depends(AccountController),
     usr_ctrl: UserController = Depends(UserController),
 ):
-    """return the account with the given id.
+    """return the account with the given id. Users that have the role `admin` can
+    get any account, otherwise the authenticated user can only get the account of himself.
 
     Args:
         id (int): the account id
@@ -184,10 +187,13 @@ async def get_account(
 
     user = await usr_ctrl.get("id", account._mapping["user_id"])
     username = jwt_ctrl.validate_token(credentials)
-    if username != user._mapping['username']:  # type: ignore
-        raise HTTPException(
-            status_code=HTTPStatus.FORBIDDEN, detail="This is not your account."
-        )
+    if username != user._mapping["username"]:  # type: ignore
+        try:
+            jwt_ctrl.validate_token(credentials, required_roles="admin")
+        except JWTException:
+            raise HTTPException(
+                status_code=HTTPStatus.FORBIDDEN, detail="This is not your account."
+            )
 
     return account
 
@@ -196,7 +202,7 @@ async def get_account(
     "/",
     response_model=List[schemas.AccountOutSchema],
     summary="Lista todos as contas existentes.",
-    description="Lista as contas de todos os usuários. Somente usuário que possuem a role `admin` pode acessar."
+    description="Lista as contas de todos os usuários. Somente usuário que possuem a role `admin` pode acessar.",
 )
 async def list_accounts(
     credentials: Annotated[HTTPAuthorizationCredentials, Depends(bearer)],
