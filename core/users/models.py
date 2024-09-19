@@ -83,14 +83,14 @@ class User(Base):
         )
         if not matches:
             raise exceptions.UserInvalidUsernameException(
-                detail="O nome de usuário é inválido."
+                detail="Invalid username."
             )
 
     def validate_password(self):
         """validates the password strength"""
         if not validators.strong_password_validator(self.password):
             raise exceptions.UserWeakPasswordException(
-                "A senha é muito fraca.",
+                "Password too weak.",
             )
 
     def validate_first_name(self):
@@ -100,7 +100,7 @@ class User(Base):
             USER_RULES.FIRSTNAME_REGEX_PATTERN, self.first_name, strict=True
         )
         if not valid:
-            raise exceptions.UserInvalidNameException(detail="Primeiro nome inválido.")
+            raise exceptions.UserInvalidNameException(detail="Invalid first name.")
 
     def validate_last_name(self):
         """validates if the last name contains only letters and has the
@@ -109,13 +109,13 @@ class User(Base):
             USER_RULES.LASTNAME_REGEX_PATTERN, self.last_name, strict=True
         )
         if not valid:
-            raise exceptions.UserInvalidNameException(detail="Sobrenome inválido.")
+            raise exceptions.UserInvalidNameException(detail="Invalid last name.")
 
     def validate_cpf(self):
         """validates if the user's cpf is valid and return the cpf without punctuations"""
         validator = validators.CpfValidator(self.cpf)
         if not validator.is_valid():
-            raise exceptions.UserInvalidCPFException("O CPF é inválido")
+            raise exceptions.UserInvalidCPFException("Invalid CPF")
 
     def validate_birthdate(self):
         """validates the max and min user's age required"""
@@ -128,5 +128,5 @@ class User(Base):
 
         if not is_valid:
             raise exceptions.UserInvalidAgeException(
-                f"A idade minima deve ser entre {min_age} e {max_age} anos."
+                f"The age must be between {min_age} and {max_age} years."
             )

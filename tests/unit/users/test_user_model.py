@@ -32,7 +32,7 @@ def test_validate_username_fail(ini_user, username):
     with pytest.raises(exceptions.UserInvalidUsernameException) as exc:
         ini_user.validate_username()
 
-    assert exc.value.detail == "O nome de usuário é inválido."
+    assert exc.value.detail == "Invalid username."
     assert exc.value.code == HTTPStatus.UNPROCESSABLE_ENTITY
 
 
@@ -51,7 +51,7 @@ def test_validate_password_fail(ini_user, pw):
     with pytest.raises(exceptions.UserWeakPasswordException) as exc:
         ini_user.validate_password()
     
-    assert exc.value.detail == 'A senha é muito fraca.'
+    assert exc.value.detail == "Password too weak."
     assert exc.value.code == HTTPStatus.UNPROCESSABLE_ENTITY
 
 
@@ -80,7 +80,7 @@ def test_validate_first_name_fail(ini_user, fname):
     with pytest.raises(exceptions.UserInvalidNameException) as e:
         ini_user.validate_first_name()
     
-    assert e.value.detail == 'Primeiro nome inválido.'
+    assert e.value.detail == "Invalid first name."
     assert e.value.code == HTTPStatus.UNPROCESSABLE_ENTITY
 
 
@@ -98,7 +98,7 @@ def test_validate_last_name_fail(ini_user, lname):
     with pytest.raises(exceptions.UserInvalidNameException) as e:
         ini_user.validate_last_name()
     
-    assert e.value.detail == 'Sobrenome inválido.'
+    assert e.value.detail == "Invalid last name."
     assert e.value.code == HTTPStatus.UNPROCESSABLE_ENTITY
 
 
@@ -115,7 +115,7 @@ def test_validate_cpf_fail(ini_user):
     with pytest.raises(exceptions.UserInvalidCPFException) as e:
         ini_user.validate_cpf()
     
-    assert e.value.detail == 'O CPF é inválido'
+    assert e.value.detail == "Invalid CPF"
     assert e.value.code == HTTPStatus.UNPROCESSABLE_ENTITY
 
 
@@ -145,4 +145,4 @@ def test_validate_birthdate_fail(ini_user, date):
     with pytest.raises(exceptions.UserInvalidAgeException) as e:
         ini_user.validate_birthdate()
 
-    assert e.value.detail == f"A idade minima deve ser entre {min_age} e {max_age} anos."
+    assert e.value.detail == f"The age must be between {min_age} and {max_age} years."
