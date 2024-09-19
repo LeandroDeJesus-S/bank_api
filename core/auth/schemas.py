@@ -16,7 +16,7 @@ class JWTPayload(BaseModel):
 
 
 class AuthSchema(BaseModel):
-    """schema with the necessary data to auth the user"""
+    """schema with the necessary data to authenticate the user"""
     username: str
     password: str
 
@@ -32,6 +32,7 @@ class RoleOutSchema(RoleInSchema):
 
 
 class AddRoleSchema(BaseModel):
+    """user role attribution schema."""
     user_id: int
     role_id: int
 

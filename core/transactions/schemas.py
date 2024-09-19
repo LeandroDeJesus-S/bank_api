@@ -6,6 +6,7 @@ from .models import TransactionType
 
 
 class TransactionInSchema(BaseModel):
+    """Transaction input schema"""
     model_config = ConfigDict(from_attributes=True)
 
     from_account_id: int
@@ -15,5 +16,6 @@ class TransactionInSchema(BaseModel):
 
 
 class TransactionOutSchema(TransactionInSchema):
+    """Transaction output schema"""
     id: int
     time: AwareDatetime | NaiveDatetime

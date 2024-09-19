@@ -5,6 +5,7 @@ from core.domain_rules import domain_rules
 
 
 class UserInSchema(BaseModel):
+    """user input schema"""
     model_config = ConfigDict(from_attributes=True)
 
     username: str
@@ -18,6 +19,7 @@ class UserInSchema(BaseModel):
     birthdate: PastDate
 
 class UserUpSchema(BaseModel):
+    """user update schema"""
     username: str | None = None
     first_name: str | None = None
     last_name: str | None = None
@@ -30,6 +32,7 @@ class UserUpSchema(BaseModel):
 
 
 class UserOutSchema(UserInSchema):
+    """user output schema"""
     id: int
     password: str = Field(exclude=True)
     cpf: str = Field(exclude=True)

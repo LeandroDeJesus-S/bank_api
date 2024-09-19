@@ -11,13 +11,24 @@ from core.database.conf import Base
 
 
 class TransactionType(enum.Enum):
+    """enum class with the available transaction types."""
     deposit = 'deposit'
     withdraw = 'withdraw'
     transference = 'transference'
 
 
 class Transaction(Base):
-    """the model entity that represents the transactions"""
+    """the model entity that represents the transactions
+    
+    Args:
+        id (int): the transaction id. Primary key, auto incremented.
+        from_account_id (int): the sender account id. Foreign key.
+        to_account_id (int): the receiver account id. Foreign key.
+        value (Decimal): the value of the transaction.
+        type (Enum, TransactionType): the type of the transaction.
+        from_account (Account): the sender account relationship reference.
+        to_account (Account): the receiver account relationship reference.
+    """
 
     __tablename__ = "transaction"
 

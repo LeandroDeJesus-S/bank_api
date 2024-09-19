@@ -26,7 +26,20 @@ async def lifespan(app):
     await DB.disconnect()
 
 
-api = FastAPI(lifespan=lifespan)
+api = FastAPI(
+    lifespan=lifespan,
+    title="API de Banco",
+    summary="API de banco assíncrona desenvolvida como desafio de projeto final na DIO para a formação `Python Backend Developer` .",
+    description="""
+Funcionalidades:
+   - Gerenciamento de usuários como criação, listagem, atualização e exclusão.
+   - Gerenciamento de contas e tipos de conta.
+   - Uso `roles` para controle de permissões.
+   - Cadastro de transações como depósitos, saques e transferências.
+   - Exibição de extrato de uma ou todas as contas mostrando todas as transações realizadas.
+   - Utilização de Json Web Tokens para realizar a autenticação e autorização.
+"""
+)
 
 
 @api.exception_handler(ValidationException)

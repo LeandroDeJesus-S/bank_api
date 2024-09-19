@@ -7,6 +7,12 @@ from core.database.conf import Base
 
 
 class UserRole(Base):
+    """Tertiary table that represent the user role attributions.
+
+    Args:
+        user_id (int): the user id, Foreign Key and primary key.
+        role_id (int): the role id, Foreign Key and primary key.
+    """
     __tablename__ = "user_role"
 
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), primary_key=True)
@@ -16,6 +22,13 @@ class UserRole(Base):
 
 
 class Role(Base):
+    """the role entity
+
+    Args:
+        id (int): the id of the role. Primary key with autoincrement.
+        name (str): the role name. Max 10 chars, not null and unique.
+        users (List[User]): the relationship reference to the user table.
+    """
     __tablename__ = "role"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)

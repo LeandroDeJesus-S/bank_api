@@ -14,7 +14,13 @@ ACC_TYPE_RULES = domain_rules.account_type_rules
 
 
 class AccountType(Base):
-    """The entity model that represents the account type"""
+    """The entity model that represents the account type
+    
+    Args:
+        id (int, optional): the account type id, is the primary key with autoincrement.
+        type (str): the type name. Must be unique and not null.
+        account (List[Account]): the relationship reference to account model
+    """
 
     __tablename__ = "account_type"
 
@@ -29,6 +35,7 @@ class AccountType(Base):
         self.validate_type()
 
     def validate_type(self):
+        """validate if the account type name matches with the regex pattern"""
         valid = validators.regex_validator(
             ACC_TYPE_RULES.TYPE_REGEX_PATTERN, self.type, strict=True
         )
@@ -39,7 +46,19 @@ class AccountType(Base):
 
 
 class Account(Base):
-    """the model entity that represents the user account"""
+    """the model entity that represents the user account
+    
+    Args:
+        id (int, optional): the id of the account. Is the primary key with autoincrement.
+        number (str): the number of the account. Must be unique, not null and exactly 10 chars.
+        amount (Decimal): the amount of the account. Can't be null and the default is 0.
+        user_id (int): the Foreign Key that references the user id own of the account.
+        account_type_id (int): the account type id. Foreign key that references the account type.
+        user (User): the User relationship reference.
+        account_type (AccountType): the account type relationship reference.
+        sent_transactions (List[Transaction]): the relationship reference to all transactions that the user made.
+        received_transactions (List[Transaction]): the relationship reference to all transaction received by the user.
+    """
 
     __tablename__ = "account"
 

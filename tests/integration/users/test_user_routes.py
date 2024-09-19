@@ -2,7 +2,7 @@ from http import HTTPStatus
 
 import pytest
 
-from core.exceptions import UserDatabaseException
+from core.exceptions import DatabaseException
 
 
 async def test_list_users_success(client, dumb_user):
@@ -36,7 +36,7 @@ async def test_list_users_limit_offset(client, five_dumb_users):
 
 
 async def test_list_users_when_validation_exception_raises(client, mocker):
-    mocker.patch('core.users.routes.UserController.all', side_effect=UserDatabaseException('exception'))
+    mocker.patch('core.users.routes.UserController.all', side_effect=DatabaseException('exception'))
 
     response = await client.get('/users/')
     resp_data = response.json()
@@ -67,7 +67,7 @@ async def test_get_user_with_non_existent_id(client, dumb_user):
     user_id = 999
     response = await client.get(f'/users/{user_id}')
     resp_msg = response.json()['detail']  # type: ignore
-    expected_msg = 'Usuário não encontrado.'
+    expected_msg = 'User not found.'
 
     assert response.status_code == HTTPStatus.NOT_FOUND
     assert resp_msg == expected_msg
@@ -75,7 +75,7 @@ async def test_get_user_with_non_existent_id(client, dumb_user):
 
 async def test_get_user_when_validation_exception_raises(client, mocker):
     user_id = 1
-    mocker.patch('core.users.routes.UserController.get', side_effect=UserDatabaseException('exception'))
+    mocker.patch('core.users.routes.UserController.get', side_effect=DatabaseException('exception'))
 
     response = await client.get(f'/users/{user_id}')
     resp_data = response.json()
@@ -132,7 +132,7 @@ async def test_create_user_with_duplicated_cpf_and_username(client, dumb_user, c
     resp_data = response.json()
 
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-    assert resp_data == {'detail': "Nome de usuário ou cpf não disponível."}
+    assert resp_data == {'detail': 'Username of CPF are not available.'}
 
 
 async def test_create_user_when_validation_exception_raises(client, mocker):
@@ -144,7 +144,7 @@ async def test_create_user_when_validation_exception_raises(client, mocker):
         'cpf': '135.339.740-81',
         'birthdate': '2005-03-11',
     }
-    mocker.patch('core.users.routes.UserController.query', side_effect=UserDatabaseException('exception'))
+    mocker.patch('core.users.routes.UserController.query', side_effect=DatabaseException('exception'))
 
     response = await client.post('/users/', json=data)
     resp_data = response.json()
@@ -215,7 +215,7 @@ async def test_update_user_when_validation_exception_raises(client, mocker, dumb
     user_id = 1
     data = {'username': 'username'}
 
-    mocker.patch('core.users.routes.UserController.update_', side_effect=UserDatabaseException('exception'))
+    mocker.patch('core.users.routes.UserController.update_', side_effect=DatabaseException('exception'))
 
     response = await client.patch(f'/users/{user_id}', json=data, headers=dumb_token)
     resp_data = response.json()
@@ -242,7 +242,7 @@ async def test_delete_user_non_existent_id(client, dumb_user, user_ctrl, dumb_to
 
 
 async def test_delete_user_when_raises_validation_exception(client, dumb_user, user_ctrl, mocker, dumb_token):
-    mocker.patch('core.users.routes.UserController.delete_', side_effect=UserDatabaseException('exception', code=HTTPStatus.BAD_REQUEST))
+    mocker.patch('core.users.routes.UserController.delete_', side_effect=DatabaseException('exception', code=HTTPStatus.BAD_REQUEST))
     user_id = 1
 
     response = await client.delete(f'/users/{user_id}', headers=dumb_token)

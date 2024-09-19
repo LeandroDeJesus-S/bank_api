@@ -13,7 +13,19 @@ USER_RULES = domain_rules.user_rules
 
 
 class User(Base):
-    """the user entity representation"""
+    """the user entity representation
+    
+    Args:
+        id (int): the user id. Primary key, auto incremented.
+        username (str): the username. Must be unique and not null.
+        password (str): the user password. Must have upper and lower cases, number and at least one of !@#$%^&*()_+ symbols. The password is store as hash.
+        first_name (str): the user first name. Can't be null.
+        last_name (str): the user last name. Can't be null.
+        cpf (str): the user cpf. Can't be null and must be unique.
+        birthdate (date): the user birth day. Can't be null.
+        accounts (List[Account]): the user accounts relationship reference.
+        roles (List[Account]): the user roles relationship reference.
+    """
 
     __tablename__ = "user"
 

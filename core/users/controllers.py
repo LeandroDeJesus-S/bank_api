@@ -13,7 +13,15 @@ class UserController(DatabaseController):
         super().__init__(model=User)
         self._pw_controller = PasswordController()
     
-    async def create(self, **mapping: Mapping[Any, Any]) -> int | None:
+    async def create(self, **mapping: Mapping[Any, Any]) -> int:
+        """creates a new user hashing the password.
+
+        Raises:
+            DatabaseException: if some error of validation or with SQLAlchemy occur.
+
+        Returns:
+            int: the number of rows affected in database
+        """
         self._check_fields(list(mapping.keys()))
 
         try:
@@ -29,6 +37,16 @@ class UserController(DatabaseController):
             raise DatabaseException("Creation fail.") from exc
 
     async def update_(self, id: int, **mapping: Mapping) -> bool:
+        """updates the user with the given id. If password is in the mapping
+        than it will be hashed before update.
+
+        Args:
+            id (int): the user id to be updated.
+            mapping (Mapping): the mapping of fields and values to update.
+
+        Returns:
+            bool: True if updated.
+        """
         if not isinstance(id, int):
             return False
         

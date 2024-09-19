@@ -10,6 +10,7 @@ TRANSACTION_RULES = domain_rules.transaction_rules
 
 
 class TransactionController(DatabaseController):
+    """the controller to manage the transactions"""
     def __init__(self) -> None:
         super().__init__(model=Transaction)
 
@@ -21,7 +22,21 @@ class TransactionController(DatabaseController):
         type: TransactionType,
         accounts_controller,
     ):
-        """manages a new transaction"""
+        """creates a new transaction
+
+        Args:
+            from_account (Account): the sender account model instance.
+            to_account (Account): the receiver account model instance.
+            value (Decimal): the value of the transaction.
+            type (TransactionType): the type of the transaction
+            accounts_controller (AccountController): the accounts controller instance.
+
+        Raises:
+            exceptions.TransactionException: an invalid transaction type was given
+
+        Returns:
+            bool: True if rows are affected
+        """
         async with self._db.transaction():
             self.validate(from_account, to_account, value, type)
 
@@ -65,11 +80,32 @@ class TransactionController(DatabaseController):
         return bool(created)
 
     def validate(self, from_account, to_account, value, type):
+        """template method to call the validation methods. If some validation
+        fail raises TransactionException else returns None.
+
+        Args:
+            from_account (Account): the sender account instance.
+            to_account (Account): the receiver account instance.
+            value (Decimal): the value of the transaction.
+            type (TransactionType): the transaction type.
+        """
         self.validate_deposit(type, value, from_account, to_account)
         self.validate_withdraw(type, value, to_account, from_account)
         self.validate_transference(type, value, from_account, to_account)
 
     def validate_deposit(self, type, value, account_from, account_to):
+        """makes the validation of a deposit transaction
+
+        Args:
+            type (TransactionType): the type of the transaction.
+            value (Decimal): the value of the transaction.
+            account_from (Account): the instance of the sender of the transaction.
+            account_to (Account): the instance of the receiver account.
+
+        Raises:
+            exceptions.TransactionException: the value of the deposit is invalid.
+            exceptions.TransactionException: the sender is different of the receiver.
+        """
         if type != TransactionType.deposit:
             return
 
@@ -87,6 +123,19 @@ class TransactionController(DatabaseController):
             )
 
     def validate_withdraw(self, type, value, to_account, from_account):
+        """makes the validation of a withdraw transaction
+
+        Args:
+            type (TransactionType): the type of the transaction.
+            value (Decimal): the value of the transaction.
+            account_from (Account): the instance of the sender of the transaction.
+            account_to (Account): the instance of the receiver account.
+
+        Raises:
+            exceptions.TransactionException: the value of the withdraw is invalid.
+            exceptions.TransactionException: the sender is different of the receiver.
+            exceptions.TransactionException: funds insufficient to withdraw.
+        """
         if type != TransactionType.withdraw:
             return
 
@@ -107,6 +156,19 @@ class TransactionController(DatabaseController):
             raise exceptions.TransactionException("Insufficient funds to withdraw.")
 
     def validate_transference(self, type, value, from_account, to_account):
+        """makes the validation of a transference transaction
+
+        Args:
+            type (TransactionType): the type of the transaction.
+            value (Decimal): the value of the transaction.
+            account_from (Account): the instance of the sender of the transaction.
+            account_to (Account): the instance of the receiver account.
+
+        Raises:
+            exceptions.TransactionException: the sender is making a transference to himself.
+            exceptions.TransactionException: the value of the transference is invalid.
+            exceptions.TransactionException: the sender is different of the receiver.
+        """
         if type != TransactionType.transference:
             return
 

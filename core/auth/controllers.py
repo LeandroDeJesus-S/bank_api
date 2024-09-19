@@ -141,11 +141,13 @@ class PasswordController:
 
 
 class RoleController(DatabaseController):
+    """the controller that manages the role database operations"""
     def __init__(self) -> None:
         super().__init__(model=Role)
 
 
 class UserRoleController(DatabaseController):
+    """the controller that manages the roles for an user"""
     def __init__(self) -> None:
         super().__init__(model=UserRole)
 
