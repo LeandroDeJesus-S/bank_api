@@ -1,16 +1,21 @@
-from datetime import datetime
 from decimal import Decimal
 from typing import Annotated
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, AwareDatetime, NaiveDatetime
 from annotated_types import Gt
+from .models import TransactionType
 
 
-class TransactionSchema(BaseModel):
+class TransactionInSchema(BaseModel):
+    """Transaction input schema"""
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
-    from_id: int
-    to_id: int
+    from_account_id: int
+    to_account_id: int
     value: Annotated[Decimal, Gt(Decimal('0'))]
-    time: datetime
-    type: str
+    type: TransactionType
+
+
+class TransactionOutSchema(TransactionInSchema):
+    """Transaction output schema"""
+    id: int
+    time: AwareDatetime | NaiveDatetime

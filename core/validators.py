@@ -5,23 +5,19 @@ from core.domain_rules import domain_rules
 
 class CpfValidator:
     def __init__(self, cpf: str) -> None:
-        self.cpf = cpf
+        self._cpf = cpf
         self.verified_cpf = self.validate()
 
     @property
     def cpf(self):
+        self._cpf = "".join(list(map(lambda i: i if i.isnumeric() else "", self._cpf)))
         return self._cpf
 
-    @cpf.setter
-    def cpf(self, cpf):
-        cpf = "".join(list(map(lambda i: i if i.isnumeric() else "", cpf)))
-        self._cpf = cpf
-
     def calculate_first_digit(self) -> str:
-        """Calcula o primeiro digito do cpf
+        """Calculates the first digit of the CPF
 
         Returns:
-            str: reultado do calculo do primeiro digito.
+            str: result of the calculation of the first digit.
         """
         result, m = 0, 10
         for c in self.cpf[:-2]:
@@ -33,10 +29,10 @@ class CpfValidator:
         return final_result if int(final_result) <= 9 else "0"
 
     def calculate_second_digit(self) -> str:
-        """Calcula o segundo digito do cpf
+        """Calculates the second digit of the CPF
 
         Returns:
-            str: resultado do calculo do segundo digito.
+            str: result of the calculation of the second digit.
         """
         m, ac = 11, 0
         for i in self.cpf[:-2] + self.calculate_first_digit():
@@ -48,13 +44,12 @@ class CpfValidator:
         return final_result if int(final_result) <= 9 else "0"
 
     def validate(self) -> str:
-        """Faz verificação de comprimento e sequencia, execulta os calculos do
-        primeiro e segundo digito, e forma o cpf para validação.
+        """Performs length and sequence verification, calculates the first and second digits, and forms the CPF for validation.
 
         Returns:
-            str: cpf com calculo do primeiro e segundo digito para validar
+            str: CPF with the calculation of the first and second digits for validation
         """
-        if self.is_sequence() or not self.has_valid_length():
+        if not self.cpf or self.is_sequence() or not self.has_valid_length():
             return ""
         base = self.cpf[:-2]
         first_digit = self.calculate_first_digit()
@@ -63,27 +58,27 @@ class CpfValidator:
         return cpf_to_validation
 
     def is_valid(self) -> bool:
-        """verifica se o cpf enviado é valido
+        """Checks if the provided CPF is valid
 
         Returns:
-            bool: True se o cpf é valido ou False se não é valido.
-        """
-        return True if self.cpf == self.verified_cpf else False
+            bool: True if the CPF is valid or False if it is not valid.
+        """        
+        return True if self.cpf and self.cpf == self.verified_cpf else False
 
     def is_sequence(self) -> bool:
-        """Verifica se o cpf enviado é uma sequencia Ex; 000.000.000-00
+        """Checks if the provided CPF is a sequence, e.g., 000.000.000-00
 
         Returns:
-            bool: True se for uma sequencia de digitos, False se não for
-        """
+            bool: True if it is a sequence of digits, False if it is not.
+        """        
         verify = self.cpf[0] * 11
         return True if verify == self.cpf else False
 
     def has_valid_length(self) -> bool:
-        """Verifica se o comprimento do cpf enviado é valido.
+        """Checks if the length of the provided CPF is valid.
 
         Returns:
-            bool: True se o comprimento for valido ou False se não é valido.
+            bool: True if the length is valid or False if it is not valid.
         """
         return True if len(self.cpf) == 11 else False
 
@@ -103,25 +98,27 @@ def min_max_validator(min_, max_, value) -> bool:
     return min_ <= value <= max_
 
 
-def regex_validator(pattern: str, string: str, flags=0) -> bool:
+def regex_validator(pattern: str, string: str, flags=0, strict=False) -> bool:
     """validates the given string applying the given pattern
 
     Args:
         pattern (str): regular expression
         string (_type_): the value to apply the regex
         flags (int, optional): regex flags. Defaults to 0.
+        strict (bool): if True uses re.match instead re.search
 
     Returns:
         bool: True if the pattern matches
     """
     regex = re.compile(pattern, flags)
-    match = re.search(regex, string)
-    return match is not None
+    if strict:
+        return re.match(pattern, string, flags) is not None
+    return re.search(regex, string) is not None
 
 
 def strong_password_validator(password: str) -> bool:
     """validates if the password contains upper/lower case letters,
-    digits and any of @#$&*! symbols
+    digits and any of !@#$%^&*()_+ symbols
 
     Args:
         password (str): the user password
@@ -132,7 +129,7 @@ def strong_password_validator(password: str) -> bool:
     up = regex_validator(r"[A-Z]", password)
     low = regex_validator(r"[a-z]", password)
     num = regex_validator(r"\d", password)
-    sym = regex_validator(r"[@#$&*!]", password)
+    sym = regex_validator(r"[\!@#\$%\^&\*\(\)_\+]", password)
     length = min_max_validator(
         domain_rules.user_rules.MIN_PASSWORD_SIZE,
         domain_rules.user_rules.MAX_PASSWORD_SIZE,

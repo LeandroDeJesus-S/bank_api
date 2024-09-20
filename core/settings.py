@@ -8,6 +8,7 @@ class Settings(BaseSettings):
 
     DATABASE_URI: str
     ENVIRONMENT: str
+    JWT_SECRET: str
 
 
-settings = Settings()  # pyright: ignore
+settings = Settings()  # type: ignore # pyright: ignore

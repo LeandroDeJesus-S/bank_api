@@ -2,10 +2,10 @@ from typing import List
 from datetime import date, datetime, timezone
 
 from sqlalchemy import Date, String
-from sqlalchemy.orm import Mapped, mapped_column, validates, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core import exceptions
-from core.database import Base
+from core.database.conf import Base
 from core.domain_rules import domain_rules
 from core import validators
 
@@ -13,7 +13,20 @@ USER_RULES = domain_rules.user_rules
 
 
 class User(Base):
-    """the user entity representation"""
+    """the user entity representation
+    
+    Args:
+        id (int): the user id. Primary key, auto incremented.
+        username (str): the username. Must be unique and not null.
+        password (str): the user password. Must have upper and lower cases, number and at least one of !@#$%^&*()_+ symbols. The password is store as hash.
+        first_name (str): the user first name. Can't be null.
+        last_name (str): the user last name. Can't be null.
+        cpf (str): the user cpf. Can't be null and must be unique.
+        birthdate (date): the user birth day. Can't be null.
+        accounts (List[Account]): the user accounts relationship reference.
+        roles (List[Account]): the user roles relationship reference.
+    """
+
     __tablename__ = "user"
 
     id: Mapped[int] = mapped_column(
@@ -26,7 +39,7 @@ class User(Base):
         unique=True,
     )
     password: Mapped[str] = mapped_column(
-        String(USER_RULES.MAX_PASSWORD_SIZE),
+        String(256),  # different of the configured value in rules cause stores the hash
         nullable=False,
     )
     first_name: Mapped[str] = mapped_column(
@@ -47,69 +60,73 @@ class User(Base):
         nullable=False,
     )
 
-    accounts: Mapped[List['Account']] = relationship(back_populates='user')  # noqa: F821 # pyright: ignore
+    accounts: Mapped[List["Account"]] = relationship(back_populates="user")  # type: ignore # noqa: F821
+    roles: Mapped[List["Role"]] = relationship(  # type: ignore # noqa: F821
+        secondary="user_role", back_populates="users"
+    )
 
-    @validates("username")
-    def validate_username(self, _, username):
+    def validate(self):
+        """call all functions that validates the fields"""
+        self.validate_username()
+        self.validate_password()
+        self.validate_first_name()
+        self.validate_last_name()
+        self.validate_cpf()
+        self.validate_birthdate()
+
+    def validate_username(self):
         """validates if the username contains alphanumeric cases, spaces and
         the valid size"""
         matches = validators.regex_validator(
             USER_RULES.USERNAME_REGEX_PATTERN,
-            username,
+            self.username,
         )
         if not matches:
-            raise exceptions.UserInvalidNameException(
-                detail="O nome de usuário é inválido."
+            raise exceptions.UserInvalidUsernameException(
+                detail="Invalid username."
             )
-        return username
 
-    @validates("first_name")
-    def validate_first_name(self, _, first_name):
+    def validate_password(self):
+        """validates the password strength"""
+        if not validators.strong_password_validator(self.password):
+            raise exceptions.UserWeakPasswordException(
+                "Password too weak.",
+            )
+
+    def validate_first_name(self):
         """validates if the first name contains only letters and has the
         valid size"""
         valid = validators.regex_validator(
-            USER_RULES.FIRSTNAME_REGEX_PATTERN, first_name
+            USER_RULES.FIRSTNAME_REGEX_PATTERN, self.first_name, strict=True
         )
         if not valid:
-            raise exceptions.UserInvalidNameException(
-                detail='Primeiro nome inválido.'
-            )
-        return first_name
+            raise exceptions.UserInvalidNameException(detail="Invalid first name.")
 
-    @validates("last_name")
-    def validate_last_name(self, _, last_name):
+    def validate_last_name(self):
         """validates if the last name contains only letters and has the
         valid size"""
         valid = validators.regex_validator(
-            USER_RULES.LASTNAME_REGEX_PATTERN, last_name
+            USER_RULES.LASTNAME_REGEX_PATTERN, self.last_name, strict=True
         )
         if not valid:
-            raise exceptions.UserInvalidNameException(
-                detail='Sobrenome inválido.'
-            )
-        return last_name
+            raise exceptions.UserInvalidNameException(detail="Invalid last name.")
 
-    @validates("cpf")
-    def validate_cpf(self, _, cpf):
+    def validate_cpf(self):
         """validates if the user's cpf is valid and return the cpf without punctuations"""
-        validator = validators.CpfValidator(cpf)
+        validator = validators.CpfValidator(self.cpf)
         if not validator.is_valid():
-            raise exceptions.UserInvalidCPFException("O CPF é inválido")
+            raise exceptions.UserInvalidCPFException("Invalid CPF")
 
-        return validator.cpf
-
-    @validates("birthdate")
-    def validate_birthdate(self, _, birthdate):
+    def validate_birthdate(self):
         """validates the max and min user's age required"""
         now = datetime.now(timezone.utc)
 
-        user_age = now.year - birthdate.year
+        user_age = now.year - self.birthdate.year
         min_age = domain_rules.user_rules.MIN_USER_AGE
         max_age = domain_rules.user_rules.MAX_USER_AGE
         is_valid = validators.min_max_validator(min_age, max_age, user_age)
 
         if not is_valid:
             raise exceptions.UserInvalidAgeException(
-                f"A idade minima deve ser entre {min_age} e {max_age} anos."
+                f"The age must be between {min_age} and {max_age} years."
             )
-        return birthdate

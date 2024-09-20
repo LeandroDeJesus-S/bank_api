@@ -1,0 +1,29 @@
+name: Run tests
+on: [push, pull_request]
+jobs:
+    test:
+        runs-on: ubuntu-latest
+        steps:
+            - name: load repo
+              uses: actions/checkout@v4
+
+            - name: install poetry
+              run: curl -sSL https://install.python-poetry.org | python3 -
+
+            - name: install python
+              uses: actions/setup-python@v5
+              with:
+                python-version: '3.12.4'
+                cache: 'poetry'
+
+            - name: install dependencies
+              run: poetry install
+            
+            - name: create .env
+              run: cp .env-example .env
+         
+            - name: running mypy
+              run: poetry run mypy core/ --ignore-missing-imports
+
+            - name: running pytest
+              run: poetry run pytest
