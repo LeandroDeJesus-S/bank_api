@@ -8,7 +8,6 @@ class CpfValidator:
         self._cpf = cpf
         self.verified_cpf = self.validate()
 
-
     @property
     def cpf(self):
         self._cpf = "".join(list(map(lambda i: i if i.isnumeric() else "", self._cpf)))

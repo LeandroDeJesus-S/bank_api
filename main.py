@@ -4,7 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from core.accounts import routes as account_routes
-from core.database.conf import DB, Base, engine
+from core.database.conf import DB
 from core.exceptions import ValidationException
 from core.users import routes as user_routes
 from core.transactions import routes as transaction_routes
@@ -13,14 +13,6 @@ from core.auth import routes as auth_routes
 
 @asynccontextmanager
 async def lifespan(app):
-    import core.accounts.models as acct_models
-    import core.users.models as user_models
-    import core.transactions.models as transaction_models
-    import core.auth.models as auth_models
-
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
     await DB.connect()
     yield
     await DB.disconnect()
